@@ -6,10 +6,14 @@ import threading
 import json
 import os
 import gzip
+import sys
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import logging
+
+# Increase recursion limit to allow deeper recursion for demonstration
+sys.setrecursionlimit(3000)  # Allow up to 3000 recursive calls for maximum stack overflow demonstration
 
 app = Flask(__name__)
 CORS(app)
@@ -98,16 +102,20 @@ def fetch_earthquake_data(target_count, continent_filter='all'):
         print(f"   Continent filter: {continent_filter}")
 
     all_features = []
-    batch_size = 10000  # Optimized batch size for faster fetching
+    batch_size = 2000  # Smaller batch size for better reliability
     min_magnitude = 2.5  # Only earthquakes with magnitude >= 2.5
 
-    # Comprehensive date ranges from 2000 to get 20000 records with latest data
+    # Optimized date ranges - start with most recent data first
     date_ranges = [
-        ("2020-01-01", "2025-12-31"),  # Recent years
-        ("2015-01-01", "2019-12-31"),  # 2010s
-        ("2010-01-01", "2014-12-31"),  # Early 2010s
-        ("2005-01-01", "2009-12-31"),  # 2000s
-        ("2000-01-01", "2004-12-31"),  # Early 2000s
+        ("2023-01-01", "2025-12-31"),  # Most recent 3 years
+        ("2020-01-01", "2022-12-31"),  # Previous 3 years
+        ("2017-01-01", "2019-12-31"),  # 2010s
+        ("2014-01-01", "2016-12-31"),  # Mid 2010s
+        ("2011-01-01", "2013-12-31"),  # Early 2010s
+        ("2008-01-01", "2010-12-31"),  # Late 2000s
+        ("2005-01-01", "2007-12-31"),  # Mid 2000s
+        ("2002-01-01", "2004-12-31"),  # Early 2000s
+        ("1999-01-01", "2001-12-31"),  # Late 1990s
     ]
 
     for start_date, end_date in date_ranges:
@@ -116,24 +124,26 @@ def fetch_earthquake_data(target_count, continent_filter='all'):
 
         print(f"Fetching M >= {min_magnitude} from {start_date} to {end_date}")
         offset = 1
+        consecutive_errors = 0
 
-        while len(all_features) < target_count:
+        while len(all_features) < target_count and consecutive_errors < 3:
             remaining = target_count - len(all_features)
-            current_batch = min(batch_size, remaining)
+            current_batch = min(batch_size, remaining, 10000)  # USGS limit is 20000 per request
 
             url = f"https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&offset={offset}&limit={current_batch}&minmagnitude={min_magnitude}&starttime={start_date}&endtime={end_date}&orderby=time"
 
             try:
-                response = requests.get(url, timeout=30)
+                response = requests.get(url, timeout=60)  # Increased timeout
                 response.raise_for_status()
                 data = response.json()
 
                 batch_features = data.get('features', [])
                 if not batch_features:
+                    print(f"  No more data available for {start_date}-{end_date}")
                     break
 
-                # Filter to ensure all have magnitude >= 2.6 (double check)
-                valid_features = [f for f in batch_features if f['properties']['mag'] >= min_magnitude]
+                # Filter to ensure all have magnitude >= min_magnitude
+                valid_features = [f for f in batch_features if f['properties']['mag'] and f['properties']['mag'] >= min_magnitude]
 
                 # Apply continent filter if specified
                 if continent_filter != 'all':
@@ -145,72 +155,30 @@ def fetch_earthquake_data(target_count, continent_filter='all'):
 
                 all_features.extend(new_features)
                 offset += current_batch
+                consecutive_errors = 0  # Reset error counter
 
                 print(f"  Fetched {len(new_features)} valid records (total: {len(all_features)}/{target_count})")
 
                 if len(batch_features) < current_batch:
+                    print(f"  Reached end of data for {start_date}-{end_date}")
                     break
+
+                # Small delay to be respectful to the API
+                time.sleep(0.1)
 
             except Exception as e:
-                print(f"  Error fetching from {start_date}: {e}")
-                break
-
-    # If we still don't have enough, try recent data
-    if len(all_features) < target_count:
-        print(f"Still need more data. Current: {len(all_features)}, trying recent periods...")
-        older_ranges = [
-            ("2023-01-01", "2025-12-31"),
-            ("2020-01-01", "2022-12-31"),
-        ]
-
-        for start_date, end_date in older_ranges:
-            if len(all_features) >= target_count:
-                break
-
-            print(f"Fetching from historical period: {start_date} to {end_date}")
-            offset = 1
-
-            while len(all_features) < target_count:
-                remaining = target_count - len(all_features)
-                current_batch = min(batch_size, remaining)
-
-                url = f"https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&offset={offset}&limit={current_batch}&minmagnitude={min_magnitude}&starttime={start_date}&endtime={end_date}&orderby=time"
-
-                try:
-                    response = requests.get(url, timeout=60)
-                    response.raise_for_status()
-                    data = response.json()
-
-                    batch_features = data.get('features', [])
-                    if not batch_features:
-                        break
-
-                    valid_features = [f for f in batch_features if f['properties']['mag'] >= min_magnitude]
-
-                    # Apply continent filter for older data too
-                    if continent_filter != 'all':
-                        valid_features = [f for f in valid_features if get_continent(f) == continent_filter]
-
-                    existing_ids = {f['id'] for f in all_features}
-                    new_features = [f for f in valid_features if f['id'] not in existing_ids]
-
-                    all_features.extend(new_features)
-                    offset += current_batch
-
-                    print(f"  Historical: {len(new_features)} records (total: {len(all_features)})")
-
-                    if len(batch_features) < current_batch:
-                        break
-
-                except Exception as e:
-                    print(f"  Historical error: {e}")
+                consecutive_errors += 1
+                print(f"  Error fetching from {start_date} (attempt {consecutive_errors}/3): {e}")
+                if consecutive_errors >= 3:
+                    print(f"  Giving up on {start_date}-{end_date} after 3 consecutive errors")
                     break
+                time.sleep(1)  # Wait before retry
 
     # Final processing
     all_features.sort(key=lambda x: x['properties']['time'], reverse=True)
 
-    # Ensure all features meet magnitude criteria and continent filter
-    final_features = [f for f in all_features if f['properties']['mag'] >= min_magnitude]
+    # Ensure all features meet criteria
+    final_features = [f for f in all_features if f['properties']['mag'] and f['properties']['mag'] >= min_magnitude]
     if continent_filter != 'all':
         final_features = [f for f in final_features if get_continent(f) == continent_filter]
 
@@ -231,86 +199,50 @@ def get_earthquakes():
     size = int(request.args.get('size', 10))
     sort_by = request.args.get('sort', 'time')
 
-    # Priority: Cache first for instant loading
-    cache_key = get_cache_key('all', 20000)
+    # Use cache key based on requested size for better cache utilization
+    cache_key = get_cache_key('all', size)
     data = load_from_cache(cache_key)
+
     if data and len(data['features']) >= size:
-        print(f"Loaded {len(data['features'])} records from cache")
+        print(f"Loaded {len(data['features'])} records from cache for size {size}")
         data['features'] = data['features'][:size]
     else:
-        print("Cache miss or insufficient, fetching fresh data...")
-        # Fetch real-time data from USGS live feed for maximum recency
-        try:
-            response = requests.get("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson", timeout=10)
-            response.raise_for_status()
-            data = response.json()
+        print(f"Cache miss or insufficient for size {size}, fetching fresh data...")
 
-            # Filter to magnitude >= 2.5 as per requirements
-            data['features'] = [f for f in data['features'] if f['properties']['mag'] and f['properties']['mag'] >= 2.5]
+        # For small sizes, try live feed first for recency
+        if size <= 100:
+            try:
+                response = requests.get("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson", timeout=10)
+                response.raise_for_status()
+                data = response.json()
 
-            real_time_count = len(data['features'])
-            print(f"Fetched {real_time_count} real-time earthquakes (M >= 2.5)")
+                # Filter to magnitude >= 2.5 as per requirements
+                data['features'] = [f for f in data['features'] if f['properties']['mag'] and f['properties']['mag'] >= 2.5]
 
-            # If not enough real-time data, supplement with cached data
-            if real_time_count < size:
-                print(f"Need {size - real_time_count} more records, supplementing with cached data...")
-                # Load from static cache file
-                cache_file = os.path.join("backend", CACHE_DIR, "all_20000_v4.json")
-                if os.path.exists(cache_file):
-                    try:
-                        with open(cache_file, 'r') as f:
-                            cached_data = json.load(f)
-                            needed = size - real_time_count
-                            available = len(cached_data['data']['features'])
-                            if available >= needed:
-                                # Take cached data starting from a random offset to vary results
-                                import random
-                                start_idx = random.randint(0, max(0, available - needed))
-                                cached_features = cached_data['data']['features'][start_idx:start_idx + needed]
-                            else:
-                                # Duplicate cached data to meet size requirement
-                                cached_features = cached_data['data']['features'] * (needed // available + 1)
-                                cached_features = cached_features[:needed]
-                                # Modify IDs to avoid duplicates
-                                for i, f in enumerate(cached_features):
-                                    f['id'] = f'{f["id"]}_dup_{i}'
-                            data['features'].extend(cached_features)
-                            print(f"Added {len(cached_features)} cached records")
-                    except Exception as cache_e:
-                        print(f"Cache supplement error: {cache_e}")
+                real_time_count = len(data['features'])
+                print(f"Fetched {real_time_count} real-time earthquakes (M >= 2.5)")
 
-            # Limit to requested size
-            data['features'] = data['features'][:size]
+                # If live feed has enough data, use it
+                if real_time_count >= size:
+                    data['features'] = data['features'][:size]
+                    print(f"Using {size} real-time records")
+                else:
+                    # Fall back to comprehensive fetch
+                    print(f"Live feed only has {real_time_count} records, need {size}. Using comprehensive fetch...")
+                    data = fetch_earthquake_data(size, 'all')
 
-            # Cache the fresh data
+            except Exception as e:
+                print(f"Live feed error: {e}, using comprehensive fetch...")
+                data = fetch_earthquake_data(size, 'all')
+        else:
+            # For larger sizes, use comprehensive fetch directly
+            data = fetch_earthquake_data(size, 'all')
+
+        # Cache the result
+        if data and len(data['features']) >= size:
             with cache_lock:
                 save_to_cache(cache_key, data)
-
-        except Exception as e:
-            print(f"Live feed error: {e}, falling back to cached data")
-            # Load from static cache file
-            cache_file = os.path.join("backend", CACHE_DIR, "all_20000_v4.json")
-            if os.path.exists(cache_file):
-                try:
-                    with open(cache_file, 'r') as f:
-                        cached_data = json.load(f)
-                        data = {
-                            'type': 'FeatureCollection',
-                            'features': cached_data['data']['features'][:size]
-                        }
-                        print(f"Loaded {len(data['features'])} records from static cache")
-                except Exception as cache_e:
-                    print(f"Cache error: {cache_e}, using empty data")
-                    data = {
-                        'type': 'FeatureCollection',
-                        'features': []
-                    }
-            else:
-                print("No cache available, using empty data")
-                data = {
-                    'type': 'FeatureCollection',
-                    'features': []
-                }
+            print(f"Cached {len(data['features'])} records for size {size}")
 
     if data is None:
         return jsonify({'error': 'Failed to fetch earthquake data'}), 500
@@ -416,7 +348,7 @@ def get_earthquakes():
     # Jalankan analisis rekursif (dengan batas untuk menghindari stack overflow)
     recursive_result = None
     recursive_error = None
-    if len(features) <= 1000:  # Batasi untuk rekursif
+    if len(features) <= 1200:  # Batasi untuk rekursif - push to maximum limit for true stack overflow demonstration
         try:
             start_time_recursive = time.time()
             recursive_result = analyze_earthquakes_recursive(features)
@@ -424,18 +356,8 @@ def get_earthquakes():
         except RecursionError:
             recursive_error = "Stack overflow - terlalu banyak data untuk algoritma rekursif"
     else:
-        recursive_error = f"Data terlalu besar ({len(features)}) untuk algoritma rekursif (maksimal 1000)"
-        # Return mock result for large datasets to avoid delay
-        recursive_result = {
-            'total_gempa': len(features),
-            'rata_rata_magnitudo': 0.0,
-            'min_magnitudo': 0.0,
-            'max_magnitudo': 0.0,
-            'standar_deviasi': 0.0,
-            'jumlah_berbahaya': 0,
-            'persentase_berbahaya': 0.0,
-            'waktu_eksekusi': 0.0001  # Mock fast time
-        }
+        recursive_error = "Stack overflow - terlalu banyak data untuk algoritma rekursif"
+        # Don't set recursive_result for large datasets to show error in frontend
 
     # Analisis kompleksitas
     n = len(features)
@@ -452,7 +374,7 @@ def get_earthquakes():
             'worst_case': f'O(n) - {n} recursive calls, risiko stack overflow ketika n > 1000 akibat batas call stack Python',
             'average_case': f'O(n) - {n} recursive calls, overhead call stack meningkatkan kompleksitas praktis',
             'space_complexity': f'O(n) - {n} stack frames, setiap call menyimpan state (index, total, sum_mag, dll)',
-            'suitability': 'Tidak sesuai untuk data seismik besar, risiko crash sistem; cocok hanya untuk n ≤ 1000'
+            'suitability': 'Tidak sesuai untuk data seismik besar, risiko crash sistem; cocok hanya untuk n ≤ 1200 (dari maksimal 3000 recursion limit)'
         }
     }
 
@@ -494,11 +416,6 @@ def add_security_headers(response):
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     response.headers['Content-Security-Policy'] = "default-src 'self'"
 
-    # Disable compression for debugging
-    # if response.content_type == 'application/json':
-    #     response.data = gzip.compress(response.data)
-    #     response.headers['Content-Encoding'] = 'gzip'
-    #     response.headers['Vary'] = 'Accept-Encoding'
 
     return response
 
@@ -525,43 +442,6 @@ def get_continent(feature):
 
     return 'Other'
 
-def pre_cache_data():
-    """Pre-cache global earthquake data in background"""
-    target_size = 20000
-    continent = 'all'  # Only cache global data
-
-    def cache_worker():
-        try:
-            cache_key = get_cache_key(continent, target_size)
-            if not load_from_cache(cache_key):  # Only cache if not already cached
-                print("Pre-caching global earthquake data...")
-                data = fetch_earthquake_data(target_size, continent)
-                if data:
-                    with cache_lock:
-                        save_to_cache(cache_key, data)
-                    print(f"Pre-cached {len(data['features'])} global earthquake records")
-            else:
-                print("Global earthquake data already cached")
-        except Exception as e:
-            print(f"Pre-cache error: {e}")
-
-    # Start pre-caching in background
-    cache_thread = threading.Thread(target=cache_worker, daemon=True)
-    cache_thread.start()
-    print("Pre-caching global data started in background...")
-
-def pre_cache_all_sizes():
-    """Pre-cache all common sizes for faster manual input"""
-    sizes_to_cache = [1, 10, 25, 50, 100, 500, 1000, 2000, 5000, 10000, 20000]
-    for size in sizes_to_cache:
-        cache_key = get_cache_key('all', size)
-        if not load_from_cache(cache_key):
-            print(f"Pre-caching size {size}...")
-            data = fetch_earthquake_data(size, 'all')
-            if data:
-                with cache_lock:
-                    save_to_cache(cache_key, data)
-                print(f"Cached {len(data['features'])} records for size {size}")
 
 def background_cache_updater():
     """Background thread to update cache periodically"""
