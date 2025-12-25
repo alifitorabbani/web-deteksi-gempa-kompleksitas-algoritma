@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Gempa Dunia</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Data Gempa USGS Seluruh Dunia</h1>
+        <p>Data Gempa Seluruh Dunia secara Real-Time dari United States Geological Survey (Magnitudo ≥ 2.5)</p>
+    </header>
+
+    <div class="container">
+        <div class="description">
+            <p>Lihat data gempa terkini dari seluruh dunia. Data diambil secara real-time dari USGS (United States Geological Survey) untuk periode 5 tahun terakhir dengan magnitudo ≥ 2.5. Aplikasi ini menggunakan HANYA data real dari USGS tanpa data sintetis, dengan analisis kompleksitas algoritma dari 2 algoritma: Iteratif dan Rekursif. Analisis mencakup:</p>
+            <ol>
+                <li>Kasus Terbaik</li>
+                <li>Kasus Terburuk</li>
+                <li>Kasus Rata-Rata</li>
+                <li>Kompleksitas Waktu</li>
+                <li>Kesuaian Algoritma</li>
+            </ol>
+            <p><strong>✅ Data 100% Real:</strong> Semua data gempa berasal dari sumber resmi USGS tanpa modifikasi atau data buatan.</p>
+            <p><strong>🌍 Fokus Global:</strong> Aplikasi mengolah data gempa dari seluruh dunia untuk analisis kompleksitas algoritma yang komprehensif.</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="size-select">Ukuran Sample:</label>
+                <select id="size-select">
+                    <option value="1">1</option>
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="500">500</option>
+                    <option value="1000">1000</option>
+                    <option value="2000">2000</option>
+                    <option value="5000">5000</option>
+                    <option value="10000">10000</option>
+                    <option value="20000">20000</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="sort-select">Urutkan Berdasarkan:</label>
+                <select id="sort-select">
+                    <option value="time" selected>Waktu (Terbaru dulu)</option>
+                    <option value="magnitude">Magnitudo (Tertinggi dulu)</option>
+                </select>
+            </div>
+
+
+
+            <div class="control-group">
+                <label>&nbsp;</label>
+                <button id="load-btn">Muat Data Gempa</button>
+            </div>
+
+        </div>
+
+        <div id="loading" style="display: none; text-align: center; margin: 20px;">
+            <p id="loading-text">Memuat data gempa...</p>
+            <div id="progress-container" style="margin-top: 15px; display: none;">
+                <div id="progress-bar" style="width: 100%; height: 20px; background: #e0e0e0; border-radius: 10px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
+                    <div id="progress-fill" style="height: 100%; background: linear-gradient(90deg, #2c3e50, #34495e); width: 0%; transition: width 0.3s ease; border-radius: 10px;"></div>
+                </div>
+                <p id="progress-text" style="margin-top: 8px; font-size: 12px; color: #666;">0%</p>
+            </div>
+            <div id="cache-indicator" style="display: none; margin-top: 10px;">
+                <small style="color: #28a745;">⚡ Data dimuat dari cache untuk performa optimal</small>
+            </div>
+        </div>
+
+        <div id="results" style="display: none;">
+            <h2>Analisis Kompleksitas Algoritma</h2>
+
+            <div class="performance-chart">
+                <h3>Grafik Performa untuk Ukuran Sample Saat Ini</h3>
+                <canvas id="currentSizeChart" width="600" height="300"></canvas>
+            </div>
+
+            <div style="margin-top: 30px; font-size: 14px; line-height: 1.6; background: rgba(255,255,255,0.9); padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <h3 style="color: #2c3e50; margin-top: 0;">Analisis Kompleksitas Algoritma: Iteratif vs Rekursif</h3>
+
+                <h4 style="color: #34495e;">Kompleksitas Waktu Teoritis</h4>
+                <p>Kedua algoritma memiliki kompleksitas waktu <strong>O(n)</strong>, di mana n adalah ukuran input. Waktu eksekusi meningkat linier seiring bertambahnya data.</p>
+
+                <h4 style="color: #34495e;">Perbandingan Waktu Eksekusi Berdasarkan Ukuran Input</h4>
+                <ul>
+                    <li><strong>Input Kecil (n=1-100):</strong> Performa hampir sama (~0.0001-0.0008 detik). Overhead rekursif masih toleran.</li>
+                    <li><strong>Input Sedang (n=500-1000):</strong> Iteratif 2x lebih cepat. Overhead stack mulai terasa.</li>
+                    <li><strong>Input Besar (n=5000-20000):</strong> Iteratif berhasil (~0.004-0.015 detik), rekursif gagal (stack overflow).</li>
+                </ul>
+
+                <h4 style="color: #34495e;">Alasan Detail Superioritas Algoritma Iteratif</h4>
+                <ol>
+                    <li><strong>Efisiensi Memori:</strong> O(1) vs O(n) space. Iteratif menggunakan variabel tetap, rekursif alokasi stack frames.</li>
+                    <li><strong>Overhead Operasional:</strong> Loop sederhana vs function calls berulang. Setiap rekursi menambah 10-20 instruksi CPU.</li>
+                    <li><strong>Skalabilitas:</strong> Tidak terbatas recursion limit. Iteratif menangani dataset tak terbatas.</li>
+                    <li><strong>Stabilitas Sistem:</strong> Tidak ada risiko crash. Rekursif berbahaya pada input besar.</li>
+                </ol>
+
+                <h4 style="color: #34495e;">Kesimpulan</h4>
+                <p>Meskipun kompleksitas sama O(n), iteratif superior praktis karena performa konsisten, efisiensi memori, dan stabilitas. Direkomendasikan untuk analisis data gempa real-time.</p>
+            </div>
+
+
+            <div class="algorithm-comparison">
+                <div class="algorithm-card">
+                    <h3>Algoritma Iteratif</h3>
+                    <div class="algorithm-code">
+                        <h4>Kode Algoritma:</h4>
+                        <pre><code>def analyze_earthquakes_iterative(features):
+    start_time = time.time()
+    total_gempa = 0
+    sum_magnitudo = 0.0
+    jumlah_berbahaya = 0
+
+    for feature in features:  # O(n) - Loop iteratif
+        magnitudo = feature['properties']['mag']
+        total_gempa += 1
+        sum_magnitudo += magnitudo
+        if magnitudo >= 5.0:
+            jumlah_berbahaya += 1
+
+    rata_rata_magnitudo = sum_magnitudo / total_gempa if total_gempa > 0 else 0.0
+    execution_time = time.time() - start_time
+
+    return {
+        'total_gempa': total_gempa,
+        'rata_rata_magnitudo': round(rata_rata_magnitudo, 2),
+        'jumlah_berbahaya': jumlah_berbahaya,
+        'waktu_eksekusi': round(execution_time, 4)
+    }</code></pre>
+                    </div>
+                    <div class="results-summary">
+                        <p>Total Gempa: <span id="iterative-total"></span></p>
+                        <p>Rata-rata Magnitudo: <span id="iterative-rata-rata"></span></p>
+                        <p>Min Magnitudo: <span id="iterative-min"></span></p>
+                        <p>Max Magnitudo: <span id="iterative-max"></span></p>
+                        <p>Standar Deviasi: <span id="iterative-std"></span></p>
+                        <p>Jumlah Gempa Berbahaya (≥5.0): <span id="iterative-berbahaya"></span> (<span id="iterative-persen"></span>%)</p>
+                        <p>Waktu Eksekusi: <span id="iterative-waktu"></span> detik</p>
+                    </div>
+                    <div class="complexity-info">
+                        <h4>Analisis Kompleksitas</h4>
+                        <p><strong>Kasus Terbaik:</strong> <span id="iterative-best"></span></p>
+                        <p><strong>Kasus Terburuk:</strong> <span id="iterative-worst"></span></p>
+                        <p><strong>Kasus Rata-rata:</strong> <span id="iterative-average"></span></p>
+                        <p><strong>Kompleksitas Ruang:</strong> <span id="iterative-space"></span></p>
+                        <p><strong>Kesesuaian:</strong> <span id="iterative-suitability"></span></p>
+                    </div>
+                    <div class="algorithm-conclusion">
+                        <h4>Kesimpulan Algoritma Iteratif</h4>
+                        <div class="conclusion-content">
+                            <p><strong>✅ Kelebihan:</strong></p>
+                            <ul>
+                                <li>Kompleksitas ruang O(1) menunjukkan efisiensi memori yang optimal, menghindari alokasi stack berlebih.</li>
+                                <li>Absennya risiko stack overflow memastikan stabilitas eksekusi pada dataset skala besar.</li>
+                                <li>Sesuai untuk pemrosesan data seismik berskala global dengan kompleksitas waktu O(n) yang linier.</li>
+                                <li>Implementasi imperatif yang sederhana memfasilitasi pemeliharaan dan debugging kode.</li>
+                                <li>Konsistensi performa temporal independen dari variasi ukuran input, ideal untuk aplikasi real-time.</li>
+                            </ul>
+                            <p><strong>❌ Kekurangan:</strong></p>
+                            <ul>
+                                <li>Kurang ekspresif dalam representasi masalah matematika rekursif secara natural.</li>
+                                <li>Memerlukan variabel state eksplisit untuk akumulasi hasil, meningkatkan kompleksitas kode.</li>
+                            </ul>
+                            <p><strong>📊 Rekomendasi:</strong> Berdasarkan analisis kompleksitas algoritma, pendekatan iteratif direkomendasikan untuk analisis data gempa real-time karena skalabilitasnya pada dataset seismik global dengan kompleksitas O(n) waktu dan O(1) ruang.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="algorithm-card">
+                    <h3>Algoritma Rekursif</h3>
+                    <div class="algorithm-code">
+                        <h4>Kode Algoritma:</h4>
+                        <pre><code>def analyze_earthquakes_recursive(features, index=0, total=0, sum_mag=0.0, dangerous=0):
+    if index >= len(features):  # Base case - O(1)
+        rata_rata = sum_mag / total if total > 0 else 0.0
+        return {
+            'total_gempa': total,
+            'rata_rata_magnitudo': round(rata_rata, 2),
+            'jumlah_berbahaya': dangerous,
+            'waktu_eksekusi': 0  # akan diukur di luar
+        }
+
+    magnitudo = features[index]['properties']['mag']
+    new_total = total + 1
+    new_sum = sum_mag + magnitudo
+    new_dangerous = dangerous + (1 if magnitudo >= 5.0 else 0)
+
+    return analyze_earthquakes_recursive(
+        features, index + 1, new_total, new_sum, new_dangerous
+    )  # Recursive call - O(n) calls</code></pre>
+                    </div>
+                    <div id="recursive-results">
+                        <div class="results-summary">
+                            <p>Total Gempa: <span id="recursive-total"></span></p>
+                            <p>Rata-rata Magnitudo: <span id="recursive-rata-rata"></span></p>
+                            <p>Min Magnitudo: <span id="recursive-min"></span></p>
+                            <p>Max Magnitudo: <span id="recursive-max"></span></p>
+                            <p>Standar Deviasi: <span id="recursive-std"></span></p>
+                            <p>Jumlah Gempa Berbahaya (≥5.0): <span id="recursive-berbahaya"></span> (<span id="recursive-persen"></span>%)</p>
+                            <p>Waktu Eksekusi: <span id="recursive-waktu"></span> detik</p>
+                        </div>
+                    </div>
+                    <div id="recursive-error" style="display: none; color: red; padding: 10px;">
+                        <p><strong>Error:</strong> <span id="recursive-error-msg"></span></p>
+                    </div>
+                    <div class="complexity-info">
+                        <h4>Analisis Kompleksitas</h4>
+                        <p><strong>Kasus Terbaik:</strong> <span id="recursive-best"></span></p>
+                        <p><strong>Kasus Terburuk:</strong> <span id="recursive-worst"></span></p>
+                        <p><strong>Kasus Rata-rata:</strong> <span id="recursive-average"></span></p>
+                        <p><strong>Kompleksitas Ruang:</strong> <span id="recursive-space"></span></p>
+                        <p><strong>Kesesuaian:</strong> <span id="recursive-suitability"></span></p>
+                    </div>
+                    <div class="algorithm-conclusion">
+                        <h4>Kesimpulan Algoritma Rekursif</h4>
+                        <div class="conclusion-content">
+                            <p><strong>✅ Kelebihan:</strong></p>
+                            <ul>
+                                <li>Representasi deklaratif yang elegan memfasilitasi pemahaman algoritma secara matematis.</li>
+                                <li>Kesesuaian intrinsik untuk masalah yang bersifat rekursif secara alami, seperti struktur pohon atau pemrosesan hierarkis.</li>
+                                <li>Kode yang lebih ringkas dan ekspresif, mengurangi kompleksitas implementasi untuk kasus tertentu.</li>
+                            </ul>
+                            <p><strong>❌ Kekurangan:</strong></p>
+                            <ul>
+                                <li>Kompleksitas ruang O(n) akibat akumulasi call stack, menyebabkan inefisiensi memori pada dataset besar.</li>
+                                <li>Risiko stack overflow pada input >1000 elemen, membatasi skalabilitas praktis.</li>
+                                <li>Tidak sesuai untuk pemrosesan data seismik skala global dengan kompleksitas waktu O(n) namun overhead stack yang signifikan.</li>
+                                <li>Implementasi yang lebih kompleks dalam hal debugging dan optimasi performa.</li>
+                                <li>Degradasi performa temporal yang eksponensial pada dataset besar akibat manajemen stack.</li>
+                            </ul>
+                            <p><strong>📊 Rekomendasi:</strong> Berdasarkan evaluasi kompleksitas algoritma, pendekatan rekursif tidak direkomendasikan untuk analisis data gempa real-time. Lebih tepat digunakan pada dataset terbatas atau sebagai model pedagogis untuk memahami konsep rekursi dalam ilmu komputer.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="table-container" style="display: none;">
+            <table id="earthquake-table">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Magnitudo</th>
+                        <th>Lokasi</th>
+                        <th>Tanggal/Waktu</th>
+                        <th>Latitude</th>
+                        <th>Longitude</th>
+                        <th>Kedalaman (km)</th>
+                    </tr>
+                </thead>
+                <tbody id="earthquake-tbody">
+                </tbody>
+            </table>
+        </div>
+
+
+        <div id="error" style="display: none; color: red; text-align: center; margin: 20px;">
+            <p>Terjadi kesalahan memuat data. Silakan coba lagi.</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>Dibuat oleh <a href="https://pddikti.kemdiktisaintek.go.id/detail-mahasiswa/Q_OUqd0Dt6dg4FWhBkxgBYgI3kZc7nWMnKH9gY9L_hvVmZw-jYSMwVDWdktgvQ5NF4Pa6g==" target="_blank">Alifito Rabbani Cahyono</a> & <a href="https://pddikti.kemdiktisaintek.go.id/detail-mahasiswa/9VllB9kncfa9WbU2pCle7iQ683xJGOOuQy-ZKf2CJeOnLSxvCTGhCLlpCj-KArPEQiqh5Q==" target="_blank">Nadisha Auliandini Nurhizah</a> - 2025</p>
+        <p>Data disediakan oleh <a href="https://earthquake.usgs.gov/" target="_blank">USGS Earthquake Hazards Program</a></p>
+        <p><a href="https://earthquake.usgs.gov/earthquakes/map/?extent=1.58183,-154.77539&extent=62.99516,-35.24414" target="_blank">Lihat Peta Gempa Global USGS</a></p>
+    </footer>
+
+    <script src="script.js"></script>
+
+    <script src="script.js"></script>
+</body>
+</html>
