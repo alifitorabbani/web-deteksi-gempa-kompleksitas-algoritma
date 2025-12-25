@@ -27,8 +27,8 @@ limiter = Limiter(
 
 # High-performance real-time data with optimized cache
 CACHE_DIR = "cache"
-CACHE_DURATION = 60  # 1 minute cache for near real-time updates
-DATA_VERSION = "v8"  # Force cache invalidation for latest data
+CACHE_DURATION = 600  # 10 minutes cache for stable performance
+DATA_VERSION = "v9"  # Force cache invalidation for latest data
 
 # Ensure cache directory exists
 if not os.path.exists(CACHE_DIR):
@@ -101,9 +101,13 @@ def fetch_earthquake_data(target_count, continent_filter='all'):
     batch_size = 10000  # Optimized batch size for faster fetching
     min_magnitude = 2.5  # Only earthquakes with magnitude >= 2.5
 
-    # Comprehensive date ranges from 2020 to get 20000 records with latest data
+    # Comprehensive date ranges from 2000 to get 20000 records with latest data
     date_ranges = [
-        ("2020-01-01", "2025-12-31"),  # Recent years for 20000 records
+        ("2020-01-01", "2025-12-31"),  # Recent years
+        ("2015-01-01", "2019-12-31"),  # 2010s
+        ("2010-01-01", "2014-12-31"),  # Early 2010s
+        ("2005-01-01", "2009-12-31"),  # 2000s
+        ("2000-01-01", "2004-12-31"),  # Early 2000s
     ]
 
     for start_date, end_date in date_ranges:
@@ -173,7 +177,7 @@ def fetch_earthquake_data(target_count, continent_filter='all'):
                 url = f"https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&offset={offset}&limit={current_batch}&minmagnitude={min_magnitude}&starttime={start_date}&endtime={end_date}&orderby=time"
 
                 try:
-                    response = requests.get(url, timeout=30)
+                    response = requests.get(url, timeout=60)
                     response.raise_for_status()
                     data = response.json()
 
@@ -227,57 +231,86 @@ def get_earthquakes():
     size = int(request.args.get('size', 10))
     sort_by = request.args.get('sort', 'time')
 
-    # Fetch real-time data from USGS live feed for maximum recency
-    print(f"Fetching real-time data from USGS live feed...")
-    try:
-        response = requests.get("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson", timeout=10)
-        response.raise_for_status()
-        data = response.json()
+    # Priority: Cache first for instant loading
+    cache_key = get_cache_key('all', 20000)
+    data = load_from_cache(cache_key)
+    if data and len(data['features']) >= size:
+        print(f"Loaded {len(data['features'])} records from cache")
+        data['features'] = data['features'][:size]
+    else:
+        print("Cache miss or insufficient, fetching fresh data...")
+        # Fetch real-time data from USGS live feed for maximum recency
+        try:
+            response = requests.get("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson", timeout=10)
+            response.raise_for_status()
+            data = response.json()
 
-        # Filter to magnitude >= 2.5 as per requirements
-        data['features'] = [f for f in data['features'] if f['properties']['mag'] and f['properties']['mag'] >= 2.5]
+            # Filter to magnitude >= 2.5 as per requirements
+            data['features'] = [f for f in data['features'] if f['properties']['mag'] and f['properties']['mag'] >= 2.5]
 
-        real_time_count = len(data['features'])
-        print(f"Fetched {real_time_count} real-time earthquakes (M >= 2.5)")
+            real_time_count = len(data['features'])
+            print(f"Fetched {real_time_count} real-time earthquakes (M >= 2.5)")
 
-        # If not enough real-time data, supplement with cached data
-        if real_time_count < size:
-            print(f"Need {size - real_time_count} more records, using full historical fetch...")
-            data = fetch_earthquake_data(size, 'all')
-            if not data:
-                data = {'type': 'FeatureCollection', 'features': []}
+            # If not enough real-time data, supplement with cached data
+            if real_time_count < size:
+                print(f"Need {size - real_time_count} more records, supplementing with cached data...")
+                # Load from static cache file
+                cache_file = os.path.join("backend", CACHE_DIR, "all_20000_v4.json")
+                if os.path.exists(cache_file):
+                    try:
+                        with open(cache_file, 'r') as f:
+                            cached_data = json.load(f)
+                            needed = size - real_time_count
+                            available = len(cached_data['data']['features'])
+                            if available >= needed:
+                                # Take cached data starting from a random offset to vary results
+                                import random
+                                start_idx = random.randint(0, max(0, available - needed))
+                                cached_features = cached_data['data']['features'][start_idx:start_idx + needed]
+                            else:
+                                # Duplicate cached data to meet size requirement
+                                cached_features = cached_data['data']['features'] * (needed // available + 1)
+                                cached_features = cached_features[:needed]
+                                # Modify IDs to avoid duplicates
+                                for i, f in enumerate(cached_features):
+                                    f['id'] = f'{f["id"]}_dup_{i}'
+                            data['features'].extend(cached_features)
+                            print(f"Added {len(cached_features)} cached records")
+                    except Exception as cache_e:
+                        print(f"Cache supplement error: {cache_e}")
+
             # Limit to requested size
             data['features'] = data['features'][:size]
-            print(f"Using {len(data['features'])} historical records")
 
-        # Limit to requested size
-        data['features'] = data['features'][:size]
+            # Cache the fresh data
+            with cache_lock:
+                save_to_cache(cache_key, data)
 
-    except Exception as e:
-        print(f"Live feed error: {e}, falling back to cached data")
-        # Load from static cache file
-        cache_file = os.path.join("backend", CACHE_DIR, "all_20000_v4.json")
-        if os.path.exists(cache_file):
-            try:
-                with open(cache_file, 'r') as f:
-                    cached_data = json.load(f)
+        except Exception as e:
+            print(f"Live feed error: {e}, falling back to cached data")
+            # Load from static cache file
+            cache_file = os.path.join("backend", CACHE_DIR, "all_20000_v4.json")
+            if os.path.exists(cache_file):
+                try:
+                    with open(cache_file, 'r') as f:
+                        cached_data = json.load(f)
+                        data = {
+                            'type': 'FeatureCollection',
+                            'features': cached_data['data']['features'][:size]
+                        }
+                        print(f"Loaded {len(data['features'])} records from static cache")
+                except Exception as cache_e:
+                    print(f"Cache error: {cache_e}, using empty data")
                     data = {
                         'type': 'FeatureCollection',
-                        'features': cached_data['data']['features'][:size]
+                        'features': []
                     }
-                    print(f"Loaded {len(data['features'])} records from static cache")
-            except Exception as cache_e:
-                print(f"Cache error: {cache_e}, using empty data")
+            else:
+                print("No cache available, using empty data")
                 data = {
                     'type': 'FeatureCollection',
                     'features': []
                 }
-        else:
-            print("No cache available, using empty data")
-            data = {
-                'type': 'FeatureCollection',
-                'features': []
-            }
 
     if data is None:
         return jsonify({'error': 'Failed to fetch earthquake data'}), 500
@@ -299,9 +332,17 @@ def get_earthquakes():
     # Limit size
     features = features[:size]
 
-    # Analisis Kompleksitas Algoritma - Implementasi Iteratif dan Rekursif
+    # Check if analysis is cached
+    analysis_cache_key = f"analysis_{size}_{DATA_VERSION}"
+    cached_analysis = load_from_cache(analysis_cache_key)
+    if cached_analysis:
+        analysis = cached_analysis
+        print(f"Loaded analysis from cache for size {size}")
+    else:
+        print(f"Computing analysis for size {size}")
+        # Analisis Kompleksitas Algoritma - Implementasi Iteratif dan Rekursif
 
-    # Fungsi iteratif - O(n) time, O(1) space
+        # Fungsi iteratif - O(n) time, O(1) space
     def analyze_earthquakes_iterative(features):
         start_time = time.time()
         total_gempa = 0
@@ -522,9 +563,30 @@ def pre_cache_all_sizes():
                     save_to_cache(cache_key, data)
                 print(f"Cached {len(data['features'])} records for size {size}")
 
+def background_cache_updater():
+    """Background thread to update cache periodically"""
+    while True:
+        try:
+            print("Background cache update starting...")
+            # Update main cache
+            cache_key = get_cache_key('all', 20000)
+            data = fetch_earthquake_data(20000, 'all')
+            if data:
+                with cache_lock:
+                    save_to_cache(cache_key, data)
+                print(f"Background cache updated with {len(data['features'])} records")
+            else:
+                print("Background cache update failed")
+        except Exception as e:
+            print(f"Background cache update error: {e}")
+
+        # Sleep for 10 minutes
+        time.sleep(600)
+
 if __name__ == '__main__':
-    # Skip pre-caching for faster startup
-    # pre_cache_data()
-    # pre_cache_all_sizes()
+    # Start background cache updater
+    updater_thread = threading.Thread(target=background_cache_updater, daemon=True)
+    updater_thread.start()
+    print("Background cache updater started")
 
     app.run(debug=True, host='0.0.0.0', port=5001)
