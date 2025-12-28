@@ -260,34 +260,34 @@ def analyze_earthquakes_iterative(features):
 ### Algoritma Rekursif - O(n) Time, O(n) Space
 
 ```python
-def analyze_earthquakes_recursive(features, index=0, total=0, sum_mag=0.0, dangerous=0, sum_squares=0.0, min_mag=float('inf'), max_mag=float('-inf')):
+def analyze_earthquakes_recursive(features, index=0, total_gempa=0, sum_magnitudo=0.0, jumlah_berbahaya=0, sum_squares=0.0, min_mag=float('inf'), max_mag=float('-inf')):
     if index >= len(features):  # Base case
-        rata_rata = sum_mag / total if total > 0 else 0.0
-        variansi = (sum_squares / total - rata_rata ** 2) if total > 1 else 0.0
-        std_dev = variansi ** 0.5
-        persentase_berbahaya = (dangerous / total * 100) if total > 0 else 0.0
+        rata_rata_magnitudo = sum_magnitudo / total_gempa if total_gempa > 0 else 0.0
+        variansi = (sum_squares / total_gempa - rata_rata_magnitudo ** 2) if total_gempa > 1 else 0.0
+        std_dev = variansi ** 0.5 if variansi > 0 else 0.0
+        persentase_berbahaya = (jumlah_berbahaya / total_gempa * 100) if total_gempa > 0 else 0.0
         return {
-            'total_gempa': total,
-            'rata_rata_magnitudo': round(rata_rata, 3),
-            'min_magnitudo': round(min_mag, 1),
-            'max_magnitudo': round(max_mag, 1),
+            'total_gempa': total_gempa,
+            'rata_rata_magnitudo': round(rata_rata_magnitudo, 3),
+            'min_magnitudo': round(min_mag, 1) if min_mag != float('inf') else 0.0,
+            'max_magnitudo': round(max_mag, 1) if max_mag != float('-inf') else 0.0,
             'standar_deviasi': round(std_dev, 3),
-            'jumlah_berbahaya': dangerous,
+            'jumlah_berbahaya': jumlah_berbahaya,
             'persentase_berbahaya': round(persentase_berbahaya, 2),
-            'waktu_eksekusi': 0
+            'waktu_eksekusi': 0  # akan diukur di luar
         }
 
     magnitudo = features[index]['properties']['mag']
-    new_total = total + 1
-    new_sum = sum_mag + magnitudo
-    new_squares = sum_squares + magnitudo ** 2
-    new_min = min(min_mag, magnitudo)
-    new_max = max(max_mag, magnitudo)
-    new_dangerous = dangerous + (1 if magnitudo >= 5.0 else 0)
+    new_total_gempa = total_gempa + 1
+    new_sum_magnitudo = sum_magnitudo + magnitudo
+    new_sum_squares = sum_squares + magnitudo ** 2
+    new_min_mag = min(min_mag, magnitudo)
+    new_max_mag = max(max_mag, magnitudo)
+    new_jumlah_berbahaya = jumlah_berbahaya + (1 if magnitudo >= 5.0 else 0)
 
     return analyze_earthquakes_recursive(
-        features, index + 1, new_total, new_sum, new_dangerous,
-        new_squares, new_min, new_max
+        features, index + 1, new_total_gempa, new_sum_magnitudo,
+        new_jumlah_berbahaya, new_sum_squares, new_min_mag, new_max_mag
     )
 ```
 
