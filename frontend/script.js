@@ -356,53 +356,83 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function setupAlgorithmTooltips() {
+    console.log('🔧 Setting up algorithm tooltips...');
+
     // Find code blocks
     const codeBlocks = document.querySelectorAll('.algorithm-code pre code');
+    console.log('📝 Found code blocks:', codeBlocks.length);
+
+    if (codeBlocks.length === 0) {
+        console.log('❌ No code blocks found!');
+        return;
+    }
 
     codeBlocks.forEach((block, index) => {
         const isIterative = index === 0;
+        console.log(`🎯 Setting up block ${index + 1} (${isIterative ? 'iterative' : 'recursive'})`);
 
-        // Reset any existing styles to clean state
-        block.style.cssText = '';
+        // Add visual indicator
+        block.style.border = '2px solid red';
+        block.style.background = 'yellow';
+        block.style.cursor = 'pointer';
 
-        // Add subtle hover effect without changing layout
-        block.addEventListener('mouseenter', () => {
-            block.style.backgroundColor = 'rgba(49, 130, 206, 0.03)';
+        // Add event listeners
+        block.addEventListener('mouseenter', (e) => {
+            console.log('🎯 Mouse entered code block');
+            block.style.background = 'lightgreen';
         });
 
-        block.addEventListener('mouseleave', () => {
-            block.style.backgroundColor = '';
+        block.addEventListener('mouseleave', (e) => {
+            console.log('🚫 Mouse left code block');
+            block.style.background = 'yellow';
             hideCodeTooltip();
         });
 
         // Add mousemove for line detection
         block.addEventListener('mousemove', (event) => {
+            console.log('🖱️ Mouse moved in code block');
             handleSimpleLineHover(event, block, isIterative);
         });
+
+        console.log(`✅ Block ${index + 1} setup complete`);
     });
+
+    console.log('🎉 All algorithm tooltips setup complete');
 }
 
 function handleSimpleLineHover(event, codeBlock, isIterative) {
+    console.log('🔍 Detecting line hover...');
+
     const rect = codeBlock.getBoundingClientRect();
     const lineHeight = parseInt(getComputedStyle(codeBlock).lineHeight) || 20;
     const y = event.clientY - rect.top;
     const lineIndex = Math.floor(y / lineHeight);
 
+    console.log(`📏 Line height: ${lineHeight}, Y position: ${y}, Calculated line: ${lineIndex}`);
+
     // Get lines
     const codeText = codeBlock.textContent;
     const lines = codeText.split('\n').filter(line => line.trim() !== '');
 
+    console.log(`📄 Total lines in code: ${lines.length}`);
+
     if (lineIndex >= 0 && lineIndex < lines.length) {
+        console.log(`✅ Valid line ${lineIndex + 1}: "${lines[lineIndex].substring(0, 30)}..."`);
+
         const explanations = getAlgorithmExplanations(isIterative);
         const explanation = explanations[lineIndex] || `Baris ${lineIndex + 1} algoritma ${isIterative ? 'iteratif' : 'rekursif'}`;
 
+        console.log(`💬 Showing tooltip: "${explanation.substring(0, 50)}..."`);
         showInlineTooltip(event, explanation);
     } else {
+        console.log('❌ Line index out of range, hiding tooltip');
         hideCodeTooltip();
     }
 }
 
 function showInlineTooltip(event, message) {
+    console.log('🎨 Creating inline tooltip...');
+
     // Remove existing tooltip
     hideCodeTooltip();
 
@@ -410,39 +440,25 @@ function showInlineTooltip(event, message) {
     const tooltip = document.createElement('div');
     tooltip.className = 'inline-tooltip';
     tooltip.textContent = message;
-
-    // Position exactly next to cursor
     tooltip.style.position = 'fixed';
-    tooltip.style.left = (event.pageX + 15) + 'px'; // 15px to the right of cursor
-    tooltip.style.top = (event.pageY - 10) + 'px';  // 10px above cursor center
-    tooltip.style.background = 'rgba(0, 0, 0, 0.9)';
+    tooltip.style.left = (event.pageX + 15) + 'px';
+    tooltip.style.top = (event.pageY - 10) + 'px';
+    tooltip.style.background = 'red'; // Very visible for testing
     tooltip.style.color = 'white';
-    tooltip.style.padding = '6px 10px';
-    tooltip.style.borderRadius = '4px';
-    tooltip.style.fontSize = '13px';
-    tooltip.style.fontFamily = 'Arial, sans-serif';
-    tooltip.style.maxWidth = '350px';
+    tooltip.style.padding = '10px 15px';
+    tooltip.style.borderRadius = '6px';
+    tooltip.style.fontSize = '14px';
+    tooltip.style.fontWeight = 'bold';
+    tooltip.style.maxWidth = '400px';
     tooltip.style.zIndex = '10000';
-    tooltip.style.pointerEvents = 'none';
-    tooltip.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-    tooltip.style.border = '1px solid rgba(255,255,255,0.1)';
+    tooltip.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
+    tooltip.style.border = '2px solid yellow';
 
-    // Adjust position if tooltip would go off-screen
-    const tooltipRect = tooltip.getBoundingClientRect();
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-
-    // Check if tooltip goes off right edge
-    if (event.pageX + 15 + 350 > windowWidth) {
-        tooltip.style.left = (event.pageX - 365) + 'px'; // Show on left side
-    }
-
-    // Check if tooltip goes off bottom edge
-    if (event.pageY - 10 + 60 > windowHeight) {
-        tooltip.style.top = (event.pageY - 70) + 'px'; // Show above cursor
-    }
+    console.log(`📍 Tooltip positioned at: ${event.pageX + 15}, ${event.pageY - 10}`);
+    console.log(`💬 Tooltip message: "${message}"`);
 
     document.body.appendChild(tooltip);
+    console.log('✅ Tooltip added to DOM');
 }
 
 // Old function - replaced by showSimpleTooltip
