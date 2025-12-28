@@ -357,53 +357,53 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function setupAlgorithmTooltips() {
     console.log('🎯 Setting up algorithm tooltips...');
-    alert('🔧 Starting algorithm tooltip setup...');
-
-    // Find all code blocks
-    const allCodeBlocks = document.querySelectorAll('pre code');
-    console.log('📝 Found all code blocks:', allCodeBlocks.length);
 
     const algorithmCodeBlocks = document.querySelectorAll('.algorithm-code pre code');
     console.log('🎯 Found algorithm code blocks:', algorithmCodeBlocks.length);
 
     if (algorithmCodeBlocks.length === 0) {
-        alert('❌ No algorithm code blocks found!');
-        console.log('❌ No algorithm code blocks found! Available elements:');
-        console.log('- Pre elements:', document.querySelectorAll('pre').length);
-        console.log('- Code elements:', document.querySelectorAll('code').length);
-        console.log('- Algorithm divs:', document.querySelectorAll('.algorithm-code').length);
+        console.log('❌ No algorithm code blocks found!');
         return;
     }
-
-    alert(`✅ Found ${algorithmCodeBlocks.length} algorithm code blocks!`);
 
     algorithmCodeBlocks.forEach((codeBlock, index) => {
         const isIterative = index === 0;
         console.log(`🔧 Setting up ${isIterative ? 'iterative' : 'recursive'} algorithm code block`);
 
-        // Make it visually obvious this is interactive
-        codeBlock.style.border = '3px solid #3182ce';
-        codeBlock.style.borderRadius = '8px';
-        codeBlock.style.padding = '15px';
-        codeBlock.style.background = 'linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%)';
-        codeBlock.style.cursor = 'crosshair';
-        codeBlock.style.boxShadow = '0 4px 15px rgba(49, 130, 206, 0.3)';
-        codeBlock.style.transition = 'all 0.3s ease';
+        // Add subtle visual indicator that this is interactive
+        codeBlock.style.position = 'relative';
+        codeBlock.style.cursor = 'help';
 
-        // Add hover effect
+        // Add a small indicator badge
+        const indicator = document.createElement('div');
+        indicator.textContent = '💡 Hover for explanations';
+        indicator.style.position = 'absolute';
+        indicator.style.top = '-25px';
+        indicator.style.right = '0';
+        indicator.style.background = '#3182ce';
+        indicator.style.color = 'white';
+        indicator.style.padding = '2px 8px';
+        indicator.style.borderRadius = '12px';
+        indicator.style.fontSize = '10px';
+        indicator.style.fontWeight = 'bold';
+        indicator.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+        indicator.style.opacity = '0.8';
+        indicator.style.pointerEvents = 'none';
+
+        // Insert indicator before the code block
+        codeBlock.parentNode.insertBefore(indicator, codeBlock);
+
+        // Add subtle hover effect to the code block itself
         codeBlock.addEventListener('mouseenter', () => {
-            codeBlock.style.transform = 'scale(1.02)';
-            codeBlock.style.boxShadow = '0 6px 20px rgba(49, 130, 206, 0.4)';
+            codeBlock.style.backgroundColor = 'rgba(49, 130, 206, 0.05)';
+            codeBlock.style.borderLeft = '3px solid #3182ce';
+            indicator.style.opacity = '1';
         });
 
         codeBlock.addEventListener('mouseleave', () => {
-            codeBlock.style.transform = 'scale(1)';
-            codeBlock.style.boxShadow = '0 4px 15px rgba(49, 130, 206, 0.3)';
-        });
-
-        // Add click for testing
-        codeBlock.addEventListener('click', () => {
-            alert('🎯 Code block clicked! This block is interactive.');
+            codeBlock.style.backgroundColor = '';
+            codeBlock.style.borderLeft = '';
+            indicator.style.opacity = '0.8';
         });
 
         // Add mouse move for line detection
@@ -418,7 +418,6 @@ function setupAlgorithmTooltips() {
         console.log(`✅ Set up interactive code block ${index + 1}`);
     });
 
-    alert('🎉 Algorithm tooltips setup complete! Code blocks should now be highlighted in blue.');
     console.log('✅ Algorithm tooltips setup complete');
 }
 
