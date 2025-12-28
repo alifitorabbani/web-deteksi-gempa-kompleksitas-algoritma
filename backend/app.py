@@ -121,10 +121,8 @@ def cleanup_old_cache():
     except Exception as e:
         print(f"Cache cleanup error: {e}")
 
-def fetch_earthquake_data(target_count, continent_filter='all'):
+def fetch_earthquake_data(target_count):
     print(f"=== Fetching {target_count} REAL earthquake records (M >= 2.5) from USGS ===")
-    if continent_filter != 'all':
-        print(f"   Continent filter: {continent_filter}")
 
     all_features = []
     batch_size = 2000  # Smaller batch size for better reliability
@@ -169,10 +167,6 @@ def fetch_earthquake_data(target_count, continent_filter='all'):
 
                 # Filter to ensure all have magnitude >= min_magnitude
                 valid_features = [f for f in batch_features if f['properties']['mag'] and f['properties']['mag'] >= min_magnitude]
-
-                # Apply continent filter if specified
-                if continent_filter != 'all':
-                    valid_features = [f for f in valid_features if get_continent(f) == continent_filter]
 
                 # Filter out duplicates
                 existing_ids = {f['id'] for f in all_features}
@@ -273,7 +267,7 @@ def update_cache():
     try:
         print(f"API-triggered cache update starting for {size} records (continent: {continent})...")
         start_time = time.time()
-        data = fetch_earthquake_data(size, continent)
+        data = fetch_earthquake_data(size)
         update_time = time.time() - start_time
 
         if data and len(data['features']) > 0:
@@ -330,11 +324,11 @@ def get_earthquakes():
                 else:
                     # Fall back to comprehensive fetch
                     print(f"Live feed only has {real_time_count} records, need {size}. Using comprehensive fetch...")
-                    data = fetch_earthquake_data(size, 'all')
+                    data = fetch_earthquake_data(size)
 
             except Exception as e:
                 print(f"Live feed error: {e}, using comprehensive fetch...")
-                data = fetch_earthquake_data(size, 'all')
+                data = fetch_earthquake_data(size)
         else:
             # For larger sizes, try to slice from cached 20000 records first
             large_cache_key = get_cache_key(20000)
@@ -347,7 +341,7 @@ def get_earthquakes():
                 print(f"Sliced {size} records from cached 20000 records")
             else:
                 # Fall back to comprehensive fetch
-                data = fetch_earthquake_data(size, 'all')
+                data = fetch_earthquake_data(size)
 
         # Cache the result
         if data and len(data['features']) >= size:
@@ -586,7 +580,7 @@ def background_cache_updater(target_size, update_interval=300):
             if needs_update:
                 print(f"Background cache update starting for {target_size} records...")
                 start_time = time.time()
-                data = fetch_earthquake_data(target_size, 'all')
+                data = fetch_earthquake_data(target_size)
                 update_time = time.time() - start_time
 
                 if data:
