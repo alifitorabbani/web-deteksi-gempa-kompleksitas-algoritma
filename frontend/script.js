@@ -503,11 +503,7 @@ function getAlgorithmExplanations(isIterative) {
     }
 }
 
-// Legacy function - kept for compatibility but not used in new implementation
-function showCodeTooltip(event) {
-    // This function is no longer used - replaced by showCodeTooltipForLine
-    console.log('Legacy showCodeTooltip called - this should not happen');
-}
+// Legacy functions removed - using showInlineTooltip now
 
 function hideCodeTooltip() {
     // Remove existing tooltips
