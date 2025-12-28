@@ -341,22 +341,33 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeAlgorithmTooltips() {
+    console.log('Initializing algorithm tooltips...');
+
     // Process both iterative and recursive algorithm code blocks
     const algorithmCodes = document.querySelectorAll('.algorithm-code pre code');
+    console.log('Found algorithm code blocks:', algorithmCodes.length);
 
     algorithmCodes.forEach((codeBlock, algorithmIndex) => {
         const isIterative = algorithmIndex === 0;
+        console.log(`Processing ${isIterative ? 'iterative' : 'recursive'} algorithm`);
+
         const explanations = getAlgorithmExplanations(isIterative);
+        console.log('Explanations loaded:', explanations.length);
 
         // Split code into lines and create interactive elements
         const codeText = codeBlock.textContent;
+        console.log('Code text length:', codeText.length);
+
         const lines = codeText.split('\n').filter(line => line.trim() !== '');
+        console.log('Parsed lines:', lines.length);
 
         // Clear existing content
         codeBlock.innerHTML = '';
 
         // Create interactive line elements
         lines.forEach((line, lineIndex) => {
+            console.log(`Creating line ${lineIndex + 1}:`, line.substring(0, 50) + '...');
+
             const lineDiv = document.createElement('div');
             lineDiv.className = 'code-line';
             lineDiv.setAttribute('data-line', lineIndex + 1);
@@ -380,6 +391,8 @@ function initializeAlgorithmTooltips() {
 
             codeBlock.appendChild(lineDiv);
         });
+
+        console.log(`Created ${lines.length} interactive lines for ${isIterative ? 'iterative' : 'recursive'} algorithm`);
     });
 }
 
