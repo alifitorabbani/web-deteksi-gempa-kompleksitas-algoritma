@@ -343,10 +343,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize interactive algorithm code explanations after data is loaded
     // This will be called in loadEarthquakeData after results are displayed
 
-    // Also initialize immediately for testing (will be overridden after data loads)
-    setTimeout(() => {
-        setupAlgorithmTooltips();
-    }, 1000);
 
 });
 
