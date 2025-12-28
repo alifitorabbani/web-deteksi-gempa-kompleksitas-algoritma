@@ -48,9 +48,9 @@ cache_stats = {
 }
 cache_lock = threading.Lock()
 
-def get_cache_key(continent, size):
-    """Generate unique cache key for continent and size"""
-    return f"{continent}_{size}_{DATA_VERSION}"
+def get_cache_key(size):
+    """Generate unique cache key for size"""
+    return f"all_{size}_{DATA_VERSION}"
 
 def load_from_cache(cache_key):
     """Load data from cache file with performance tracking"""
@@ -277,7 +277,7 @@ def update_cache():
         update_time = time.time() - start_time
 
         if data and len(data['features']) > 0:
-            cache_key = get_cache_key(continent, size)
+            cache_key = get_cache_key(size)
             with cache_lock:
                 save_to_cache(cache_key, data)
             print(f"API cache updated with {len(data['features'])} records in {update_time:.1f}s")
@@ -301,7 +301,7 @@ def get_earthquakes():
     sort_by = request.args.get('sort', 'time')
 
     # Use cache key based on requested size for better cache utilization
-    cache_key = get_cache_key('all', size)
+    cache_key = get_cache_key(size)
     data = load_from_cache(cache_key)
 
     if data and len(data['features']) >= size:
@@ -337,7 +337,7 @@ def get_earthquakes():
                 data = fetch_earthquake_data(size, 'all')
         else:
             # For larger sizes, try to slice from cached 20000 records first
-            large_cache_key = get_cache_key('all', 20000)
+            large_cache_key = get_cache_key(20000)
             large_data = load_from_cache(large_cache_key)
             if large_data and len(large_data['features']) >= size:
                 data = {
@@ -565,7 +565,7 @@ def background_cache_updater(target_size, update_interval=300):
     """Intelligent background cache updater with performance monitoring for specific size"""
     while True:
         try:
-            cache_key = get_cache_key('all', target_size)
+            cache_key = get_cache_key(target_size)
             cache_file = os.path.join(CACHE_DIR, f"{cache_key}.json.gz")
 
             # Check if cache needs updating (only if older than update_interval/2 or doesn't exist)
