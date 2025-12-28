@@ -364,30 +364,45 @@ function setupAlgorithmTooltips() {
 
     codeBlocks.forEach((block, index) => {
         const isIterative = index === 0;
-        console.log(`🎯 Setting up block ${index + 1} (${isIterative ? 'iterative' : 'recursive'})`);
 
         // Add subtle blue theme styling
-        block.style.cursor = 'help';
+        block.style.cursor = 'text'; // Normal text cursor
         block.style.transition = 'background-color 0.2s ease';
 
         // Add event listeners
         block.addEventListener('mouseenter', (e) => {
-            console.log('🎯 Mouse entered code block');
             block.style.backgroundColor = 'rgba(49, 130, 206, 0.05)';
         });
 
         block.addEventListener('mouseleave', (e) => {
-            console.log('🚫 Mouse left code block');
             block.style.backgroundColor = '';
             hideCodeTooltip();
         });
 
-        // Add mousemove for line detection
+        // Add mousemove for line detection - more reliable approach
         block.addEventListener('mousemove', (event) => {
-            handleSimpleLineHover(event, block, isIterative);
-        });
+            // Simple approach: show tooltip based on mouse position
+            const rect = block.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
 
-        console.log(`✅ Block ${index + 1} setup complete`);
+            // Only show tooltip if mouse is within the text area
+            if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+                // Estimate which line based on Y position
+                const lineHeight = 20;
+                const lineIndex = Math.floor(y / lineHeight);
+
+                // Get code content
+                const codeText = block.textContent || block.innerText;
+                const lines = codeText.split('\n').filter(line => line.trim().length > 0);
+
+                if (lineIndex >= 0 && lineIndex < lines.length) {
+                    const explanations = getAlgorithmExplanations(isIterative);
+                    const explanation = explanations[lineIndex] || `Baris ${lineIndex + 1} algoritma ${isIterative ? 'iteratif' : 'rekursif'}`;
+                    showInlineTooltip(event, explanation);
+                }
+            }
+        });
     });
 
     console.log('🎉 All algorithm tooltips setup complete');
@@ -436,7 +451,7 @@ function showInlineTooltip(event, message) {
     tooltip.style.left = (event.pageX + 12) + 'px';
     tooltip.style.top = (event.pageY - 8) + 'px';
 
-    // Blue theme styling
+    // Blue theme styling with fade in animation
     tooltip.style.background = 'rgba(49, 130, 206, 0.95)';
     tooltip.style.color = 'white';
     tooltip.style.padding = '8px 12px';
@@ -448,6 +463,9 @@ function showInlineTooltip(event, message) {
     tooltip.style.boxShadow = '0 3px 10px rgba(49, 130, 206, 0.3)';
     tooltip.style.border = '1px solid rgba(255, 255, 255, 0.2)';
     tooltip.style.pointerEvents = 'none';
+    tooltip.style.opacity = '0';
+    tooltip.style.transform = 'translateY(5px)';
+    tooltip.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
 
     // Smart positioning - adjust if off-screen
     const windowWidth = window.innerWidth;
@@ -464,6 +482,12 @@ function showInlineTooltip(event, message) {
     }
 
     document.body.appendChild(tooltip);
+
+    // Trigger fade in animation
+    requestAnimationFrame(() => {
+        tooltip.style.opacity = '1';
+        tooltip.style.transform = 'translateY(0)';
+    });
 }
 
 // Old function - replaced by showSimpleTooltip
