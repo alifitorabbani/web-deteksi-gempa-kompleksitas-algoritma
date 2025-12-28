@@ -1187,6 +1187,111 @@ input:focus-visible {
   outline-offset: 2px;
 }
 
+/* Interactive Algorithm Code Tooltips */
+.code-line {
+  position: relative;
+  padding: 2px 0;
+  cursor: pointer;
+  transition: var(--transition);
+  border-radius: 4px;
+  margin: 1px 0;
+}
+
+.code-line:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.code-line-highlighted {
+  background: rgba(49, 130, 206, 0.2) !important;
+  border-left: 3px solid var(--accent-color);
+}
+
+.line-number {
+  color: #888;
+  font-weight: bold;
+  user-select: none;
+  margin-right: 8px;
+  display: inline-block;
+  min-width: 30px;
+  text-align: right;
+}
+
+.code-content {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* Code Tooltip */
+.code-tooltip {
+  position: fixed;
+  background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  max-width: 400px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.code-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tooltip-header {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 8px;
+  color: #e2e8f0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  padding-bottom: 4px;
+}
+
+.tooltip-content {
+  color: #f7fafc;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+/* Tooltip Arrow */
+.code-tooltip::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 20px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid var(--secondary-color);
+}
+
+/* Responsive tooltip adjustments */
+@media (max-width: 768px) {
+  .code-tooltip {
+    max-width: 300px;
+    font-size: 0.8rem;
+  }
+
+  .tooltip-header {
+    font-size: 0.9rem;
+  }
+
+  .tooltip-content {
+    font-size: 0.8rem;
+  }
+}
+
 /* Print Styles */
 @media print {
   header, nav, footer {
@@ -1200,5 +1305,9 @@ input:focus-visible {
   .container {
     max-width: none;
     padding: 0;
+  }
+
+  .code-tooltip {
+    display: none !important;
   }
 }

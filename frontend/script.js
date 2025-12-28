@@ -335,4 +335,148 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Initialize interactive algorithm code explanations
+    initializeAlgorithmTooltips();
+
 });
+
+function initializeAlgorithmTooltips() {
+    // Process both iterative and recursive algorithm code blocks
+    const algorithmCodes = document.querySelectorAll('.algorithm-code pre code');
+
+    algorithmCodes.forEach((codeBlock, algorithmIndex) => {
+        const isIterative = algorithmIndex === 0;
+        const explanations = getAlgorithmExplanations(isIterative);
+
+        // Split code into lines and create interactive elements
+        const codeText = codeBlock.textContent;
+        const lines = codeText.split('\n').filter(line => line.trim() !== '');
+
+        // Clear existing content
+        codeBlock.innerHTML = '';
+
+        // Create interactive line elements
+        lines.forEach((line, lineIndex) => {
+            const lineDiv = document.createElement('div');
+            lineDiv.className = 'code-line';
+            lineDiv.setAttribute('data-line', lineIndex + 1);
+            lineDiv.setAttribute('data-explanation', explanations[lineIndex] || 'Baris kode algoritma');
+
+            // Add line number
+            const lineNumber = document.createElement('span');
+            lineNumber.className = 'line-number';
+            lineNumber.textContent = (lineIndex + 1).toString().padStart(2, ' ') + ' ';
+            lineDiv.appendChild(lineNumber);
+
+            // Add code content
+            const codeContent = document.createElement('span');
+            codeContent.className = 'code-content';
+            codeContent.textContent = line;
+            lineDiv.appendChild(codeContent);
+
+            // Add hover event listeners
+            lineDiv.addEventListener('mouseenter', showCodeTooltip);
+            lineDiv.addEventListener('mouseleave', hideCodeTooltip);
+
+            codeBlock.appendChild(lineDiv);
+        });
+    });
+}
+
+function getAlgorithmExplanations(isIterative) {
+    if (isIterative) {
+        return [
+            "Fungsi utama yang menganalisis data gempa secara iteratif - O(n) waktu, O(1) ruang",
+            "Menginisialisasi timer untuk mengukur performa eksekusi algoritma",
+            "Variabel akumulator untuk total gempa - menggunakan memori tetap O(1)",
+            "Variabel untuk menghitung rata-rata magnitudo - akumulasi linier",
+            "Counter untuk gempa berbahaya (≥5.0) - logika kondisional sederhana",
+            "Tracking nilai minimum magnitudo - inisialisasi dengan infinity",
+            "Tracking nilai maksimum magnitudo - inisialisasi dengan negative infinity",
+            "Variabel untuk menghitung variansi statistik - akumulasi kuadrat",
+            "Loop utama O(n) - memproses setiap feature gempa secara berurutan",
+            "Ekstraksi magnitudo dari data geoJSON - akses properti nested",
+            "Inkrementasi counter total gempa - operasi atomik O(1)",
+            "Akumulasi sum magnitudo untuk perhitungan rata-rata - O(1) per iterasi",
+            "Akumulasi sum squares untuk perhitungan variansi - O(1) per iterasi",
+            "Update minimum magnitudo menggunakan fungsi min - O(1) comparison",
+            "Update maksimum magnitudo menggunakan fungsi max - O(1) comparison",
+            "Kondisi untuk mendeteksi gempa berbahaya ≥5.0 - branching sederhana",
+            "Perhitungan statistik final setelah loop selesai - O(1) operasi",
+            "Rata-rata = total sum dibagi jumlah elemen - formula statistik standar",
+            "Variansi = rata-rata kuadrat dikurangi kuadrat rata-rata - O(1)",
+            "Standar deviasi = akar kuadrat variansi - menggunakan math library",
+            "Persentase gempa berbahaya = (berbahaya/total) × 100 - O(1)",
+            "Stop timer dan hitung waktu eksekusi total - performance measurement",
+            "Return dictionary hasil analisis lengkap - struktur data O(1)"
+        ];
+    } else {
+        return [
+            "Fungsi rekursif untuk analisis data gempa - O(n) waktu, O(n) ruang stack",
+            "Parameter index untuk tracking posisi saat ini dalam array - O(1)",
+            "Parameter total_gempa untuk akumulasi counter - passed by value",
+            "Parameter sum_magnitudo untuk akumulasi total - passed by value",
+            "Parameter jumlah_berbahaya untuk tracking gempa ≥5.0 - passed by value",
+            "Parameter sum_squares untuk perhitungan variansi - passed by value",
+            "Parameter min_mag untuk tracking minimum - passed by value",
+            "Parameter max_mag untuk tracking maksimum - passed by value",
+            "Base case: jika index mencapai panjang array, hitung hasil final - O(1)",
+            "Perhitungan rata-rata dari akumulasi sum - formula statistik",
+            "Perhitungan variansi menggunakan formula: E[X²] - (E[X])² - O(1)",
+            "Perhitungan standar deviasi sebagai akar variansi - math operation",
+            "Perhitungan persentase gempa berbahaya - O(1) arithmetic",
+            "Return struktur data hasil analisis - base case completion",
+            "Ekstraksi magnitudo dari current feature - array access O(1)",
+            "Update total gempa dengan increment - O(1) arithmetic",
+            "Update sum magnitudo dengan akumulasi - O(1) arithmetic",
+            "Update sum squares untuk variansi - O(1) arithmetic",
+            "Update minimum magnitudo - comparison operation O(1)",
+            "Update maksimum magnitudo - comparison operation O(1)",
+            "Update counter gempa berbahaya dengan kondisi - ternary operator",
+            "Recursive call dengan parameter terupdate - stack frame allocation O(1)",
+            "Passing semua state ke recursive call berikutnya - O(1) per parameter"
+        ];
+    }
+}
+
+function showCodeTooltip(event) {
+    const lineElement = event.currentTarget;
+    const explanation = lineElement.getAttribute('data-explanation');
+    const lineNumber = lineElement.getAttribute('data-line');
+
+    // Remove existing tooltip
+    hideCodeTooltip();
+
+    // Create tooltip element
+    const tooltip = document.createElement('div');
+    tooltip.className = 'code-tooltip';
+    tooltip.innerHTML = `
+        <div class="tooltip-header">Baris ${lineNumber}</div>
+        <div class="tooltip-content">${explanation}</div>
+    `;
+
+    // Position tooltip
+    const rect = lineElement.getBoundingClientRect();
+    tooltip.style.left = (rect.left + window.scrollX) + 'px';
+    tooltip.style.top = (rect.top + window.scrollY - 10) + 'px';
+
+    // Add to DOM
+    document.body.appendChild(tooltip);
+
+    // Highlight current line
+    lineElement.classList.add('code-line-highlighted');
+
+    // Trigger reflow for animation
+    tooltip.offsetHeight;
+    tooltip.classList.add('visible');
+}
+
+function hideCodeTooltip() {
+    // Remove existing tooltips
+    const existingTooltips = document.querySelectorAll('.code-tooltip');
+    existingTooltips.forEach(tooltip => tooltip.remove());
+
+    // Remove highlight from all lines
+    const highlightedLines = document.querySelectorAll('.code-line-highlighted');
+    highlightedLines.forEach(line => line.classList.remove('code-line-highlighted'));
+}
