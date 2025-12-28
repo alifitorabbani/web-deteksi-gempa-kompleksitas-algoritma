@@ -53,33 +53,52 @@ def get_cache_key(continent, size):
     return f"{continent}_{size}_{DATA_VERSION}"
 
 def load_from_cache(cache_key):
-    """Load data from cache file"""
+    """Load data from cache file with performance tracking"""
     cache_file = os.path.join(CACHE_DIR, f"{cache_key}.json.gz")
     if os.path.exists(cache_file):
         try:
+            start_time = time.time()
             with gzip.open(cache_file, 'rt') as f:
                 cached_data = json.load(f)
                 # Check if cache is still valid
                 if time.time() - cached_data.get('timestamp', 0) < CACHE_DURATION:
-                    print(f"Cache hit for {cache_key}")
+                    load_time = time.time() - start_time
+                    cache_stats['hits'] += 1
+                    cache_stats['total_loads'] += 1
+                    print(f"Cache hit for {cache_key} (loaded in {load_time:.3f}s)")
                     return cached_data['data']
                 else:
                     print(f"Cache expired for {cache_key}")
         except Exception as e:
             print(f"Cache read error: {e}")
+    cache_stats['misses'] += 1
+    cache_stats['total_loads'] += 1
     return None
 
 def save_to_cache(cache_key, data):
-    """Save data to cache file (compressed)"""
+    """Save data to cache file (compressed) with performance tracking"""
     try:
         cache_file = os.path.join(CACHE_DIR, f"{cache_key}.json.gz")
         cache_data = {
             'timestamp': time.time(),
             'data': data
         }
-        with gzip.open(cache_file, 'wt') as f:
-            json.dump(cache_data, f)
-        print(f"Data cached for {cache_key}")
+
+        # Calculate uncompressed size for compression ratio
+        uncompressed_data = json.dumps(cache_data, separators=(',', ':'))
+        uncompressed_size = len(uncompressed_data.encode('utf-8'))
+
+        start_time = time.time()
+        with gzip.open(cache_file, 'wt', compresslevel=6) as f:
+            json.dump(cache_data, f, separators=(',', ':'))  # Compact JSON
+        save_time = time.time() - start_time
+
+        # Calculate compression ratio
+        compressed_size = os.path.getsize(cache_file)
+        compression_ratio = (1 - compressed_size / uncompressed_size) * 100
+        cache_stats['compression_ratio'] = compression_ratio
+
+        print(f"Data cached for {cache_key} ({compression_ratio:.1f}% compressed, saved in {save_time:.3f}s)")
     except Exception as e:
         print(f"Cache write error: {e}")
 
@@ -207,6 +226,40 @@ def index():
 @app.route('/analysis')
 def analysis():
     return app.send_static_file('index.html')
+
+@app.route('/cache-stats')
+def get_cache_stats():
+    """Get cache performance statistics"""
+    total_requests = cache_stats['total_loads']
+    hit_rate = (cache_stats['hits'] / total_requests * 100) if total_requests > 0 else 0
+
+    # Get cache file info
+    cache_files = []
+    try:
+        for filename in os.listdir(CACHE_DIR):
+            if filename.endswith('.json.gz'):
+                filepath = os.path.join(CACHE_DIR, filename)
+                size = os.path.getsize(filepath)
+                cache_files.append({
+                    'name': filename,
+                    'size_mb': round(size / (1024 * 1024), 2),
+                    'size_kb': round(size / 1024, 1)
+                })
+    except:
+        pass
+
+    return jsonify({
+        'cache_stats': {
+            'total_requests': total_requests,
+            'cache_hits': cache_stats['hits'],
+            'cache_misses': cache_stats['misses'],
+            'hit_rate_percent': round(hit_rate, 1),
+            'compression_ratio_percent': round(cache_stats['compression_ratio'], 1),
+            'cache_duration_hours': CACHE_DURATION / 3600
+        },
+        'cache_files': cache_files,
+        'cache_directory': CACHE_DIR
+    })
 
 @app.route('/earthquakes', methods=['GET'])
 def get_earthquakes():
@@ -475,24 +528,49 @@ def get_continent(feature):
 
 
 def background_cache_updater():
-    """Background thread to update cache periodically"""
+    """Intelligent background cache updater with performance monitoring"""
     while True:
         try:
-            print("Background cache update starting...")
-            # Update main cache
             cache_key = get_cache_key('all', 20000)
-            data = fetch_earthquake_data(20000, 'all')
-            if data:
-                with cache_lock:
-                    save_to_cache(cache_key, data)
-                print(f"Background cache updated with {len(data['features'])} records")
+            cache_file = os.path.join(CACHE_DIR, f"{cache_key}.json.gz")
+
+            # Check if cache needs updating (only if older than 30 minutes or doesn't exist)
+            needs_update = True
+            if os.path.exists(cache_file):
+                try:
+                    with gzip.open(cache_file, 'rt') as f:
+                        cached_data = json.load(f)
+                        cache_age = time.time() - cached_data.get('timestamp', 0)
+                        # Only update if cache is older than 30 minutes (half of CACHE_DURATION)
+                        needs_update = cache_age > (CACHE_DURATION / 2)
+                        if not needs_update:
+                            print(f"Background cache still fresh ({cache_age/60:.1f} minutes old), skipping update")
+                except:
+                    print("Background cache file corrupted, will update")
+                    needs_update = True
+
+            if needs_update:
+                print("Background cache update starting...")
+                start_time = time.time()
+                data = fetch_earthquake_data(20000, 'all')
+                update_time = time.time() - start_time
+
+                if data:
+                    with cache_lock:
+                        save_to_cache(cache_key, data)
+                    print(f"Background cache updated with {len(data['features'])} records in {update_time:.1f}s")
+                else:
+                    print("Background cache update failed")
             else:
-                print("Background cache update failed")
+                # Print cache stats periodically
+                hit_rate = (cache_stats['hits'] / max(cache_stats['total_loads'], 1)) * 100
+                print(f"Cache status: {hit_rate:.1f}% hit rate, {cache_stats['compression_ratio']:.1f}% compression")
+
         except Exception as e:
             print(f"Background cache update error: {e}")
 
-        # Sleep for 10 minutes
-        time.sleep(600)
+        # Sleep for 15 minutes (increased from 10)
+        time.sleep(900)
 
 if __name__ == '__main__':
     # Start background cache updater
