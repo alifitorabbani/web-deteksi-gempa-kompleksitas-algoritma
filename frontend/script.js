@@ -1,6 +1,8 @@
 // Script untuk Viewer Data Gempa USGS
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 DOM Content Loaded - Starting Earthquake App');
+
     const loadBtn = document.getElementById('load-btn');
     const sizeSelect = document.getElementById('size-select');
     const sortSelect = document.getElementById('sort-select');
@@ -16,8 +18,15 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    console.log('✅ Basic elements found, setting up event listeners');
 
     loadBtn.addEventListener('click', loadEarthquakeData);
+
+    // Initialize algorithm tooltips immediately for testing
+    console.log('🎯 Setting up algorithm tooltips...');
+    setTimeout(() => {
+        setupAlgorithmTooltips();
+    }, 500);
 
     async function loadEarthquakeData() {
         // Show loading, hide table and error
@@ -212,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Initialize interactive algorithm code explanations after results are displayed
             setTimeout(() => {
-                initializeAlgorithmTooltips();
+                setupAlgorithmTooltips();
                 plotCurrentSizeChart(iterative.waktu_eksekusi, recursiveTime, size);
             }, 500);
 
@@ -346,65 +355,94 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 
-function initializeAlgorithmTooltips() {
-    console.log('🎯 Initializing algorithm tooltips...');
+function setupAlgorithmTooltips() {
+    console.log('🎯 Setting up algorithm tooltips...');
+    alert('🔧 Starting algorithm tooltip setup...');
 
-    // Add hover listeners to existing code blocks using event delegation
-    const algorithmCodes = document.querySelectorAll('.algorithm-code pre code');
-    console.log('📝 Found algorithm code blocks:', algorithmCodes.length);
+    // Find all code blocks
+    const allCodeBlocks = document.querySelectorAll('pre code');
+    console.log('📝 Found all code blocks:', allCodeBlocks.length);
 
-    if (algorithmCodes.length === 0) {
-        console.log('❌ No algorithm code blocks found! Checking selectors...');
-        // Debug: check if elements exist with different selectors
-        const preElements = document.querySelectorAll('pre');
-        const codeElements = document.querySelectorAll('code');
-        const algorithmDivs = document.querySelectorAll('.algorithm-code');
-        console.log('Pre elements:', preElements.length);
-        console.log('Code elements:', codeElements.length);
-        console.log('Algorithm divs:', algorithmDivs.length);
+    const algorithmCodeBlocks = document.querySelectorAll('.algorithm-code pre code');
+    console.log('🎯 Found algorithm code blocks:', algorithmCodeBlocks.length);
+
+    if (algorithmCodeBlocks.length === 0) {
+        alert('❌ No algorithm code blocks found!');
+        console.log('❌ No algorithm code blocks found! Available elements:');
+        console.log('- Pre elements:', document.querySelectorAll('pre').length);
+        console.log('- Code elements:', document.querySelectorAll('code').length);
+        console.log('- Algorithm divs:', document.querySelectorAll('.algorithm-code').length);
         return;
     }
 
-    algorithmCodes.forEach((codeBlock, algorithmIndex) => {
-        const isIterative = algorithmIndex === 0;
-        const explanations = getAlgorithmExplanations(isIterative);
-        console.log(`🔧 Setting up ${isIterative ? 'iterative' : 'recursive'} algorithm (${explanations.length} explanations)`);
+    alert(`✅ Found ${algorithmCodeBlocks.length} algorithm code blocks!`);
 
-        // Add mouse move listener to detect which line is being hovered
+    algorithmCodeBlocks.forEach((codeBlock, index) => {
+        const isIterative = index === 0;
+        console.log(`🔧 Setting up ${isIterative ? 'iterative' : 'recursive'} algorithm code block`);
+
+        // Make it visually obvious this is interactive
+        codeBlock.style.border = '3px solid #3182ce';
+        codeBlock.style.borderRadius = '8px';
+        codeBlock.style.padding = '15px';
+        codeBlock.style.background = 'linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%)';
+        codeBlock.style.cursor = 'crosshair';
+        codeBlock.style.boxShadow = '0 4px 15px rgba(49, 130, 206, 0.3)';
+        codeBlock.style.transition = 'all 0.3s ease';
+
+        // Add hover effect
+        codeBlock.addEventListener('mouseenter', () => {
+            codeBlock.style.transform = 'scale(1.02)';
+            codeBlock.style.boxShadow = '0 6px 20px rgba(49, 130, 206, 0.4)';
+        });
+
+        codeBlock.addEventListener('mouseleave', () => {
+            codeBlock.style.transform = 'scale(1)';
+            codeBlock.style.boxShadow = '0 4px 15px rgba(49, 130, 206, 0.3)';
+        });
+
+        // Add click for testing
+        codeBlock.addEventListener('click', () => {
+            alert('🎯 Code block clicked! This block is interactive.');
+        });
+
+        // Add mouse move for line detection
         codeBlock.addEventListener('mousemove', (event) => {
-            handleCodeHover(event, codeBlock, explanations, isIterative);
+            handleCodeLineHover(event, codeBlock, isIterative);
         });
 
         codeBlock.addEventListener('mouseleave', () => {
             hideCodeTooltip();
         });
 
-        // Add a visual indicator that the code is interactive
-        codeBlock.style.cursor = 'pointer';
-        codeBlock.title = 'Hover over code lines to see explanations';
-        codeBlock.style.border = '2px solid rgba(49, 130, 206, 0.3)';
-        codeBlock.style.borderRadius = '6px';
-        codeBlock.style.transition = 'border-color 0.3s ease';
-        codeBlock.style.padding = '10px';
-        codeBlock.style.background = 'rgba(49, 130, 206, 0.05)';
+        console.log(`✅ Set up interactive code block ${index + 1}`);
     });
 
-    console.log('✅ Algorithm tooltips initialized successfully');
-    alert('🎉 Algorithm tooltips initialized! Hover over code lines to see explanations.');
+    alert('🎉 Algorithm tooltips setup complete! Code blocks should now be highlighted in blue.');
+    console.log('✅ Algorithm tooltips setup complete');
 }
 
-function handleCodeHover(event, codeBlock, explanations, isIterative) {
+function handleCodeLineHover(event, codeBlock, isIterative) {
+    console.log('🎯 Mouse moved over code block');
+
     const rect = codeBlock.getBoundingClientRect();
     const lineHeight = parseInt(getComputedStyle(codeBlock).lineHeight) || 20;
     const y = event.clientY - rect.top;
     const lineIndex = Math.floor(y / lineHeight);
 
+    console.log(`📍 Calculated line index: ${lineIndex}, y: ${y}, lineHeight: ${lineHeight}`);
+
     // Get the actual lines from the code block
     const codeText = codeBlock.textContent;
     const lines = codeText.split('\n').filter(line => line.trim() !== '');
 
+    console.log(`📝 Found ${lines.length} lines in code block`);
+
     if (lineIndex >= 0 && lineIndex < lines.length) {
+        const explanations = getAlgorithmExplanations(isIterative);
         const explanation = explanations[lineIndex] || `Baris ${lineIndex + 1} algoritma ${isIterative ? 'iteratif' : 'rekursif'}`;
+
+        console.log(`💬 Showing tooltip for line ${lineIndex + 1}: ${explanation.substring(0, 50)}...`);
 
         // Create tooltip data
         const tooltipData = {
@@ -415,6 +453,7 @@ function handleCodeHover(event, codeBlock, explanations, isIterative) {
 
         showCodeTooltipForLine(event, tooltipData);
     } else {
+        console.log('🚫 Line index out of range, hiding tooltip');
         hideCodeTooltip();
     }
 }
