@@ -350,7 +350,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Also initialize immediately for testing (will be overridden after data loads)
     setTimeout(() => {
-        initializeAlgorithmTooltips();
+        setupAlgorithmTooltips();
     }, 1000);
 
 });
