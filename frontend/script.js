@@ -422,26 +422,18 @@ function setupAlgorithmTooltips() {
 }
 
 function handleCodeLineHover(event, codeBlock, isIterative) {
-    console.log('🎯 Mouse moved over code block');
-
     const rect = codeBlock.getBoundingClientRect();
     const lineHeight = parseInt(getComputedStyle(codeBlock).lineHeight) || 20;
     const y = event.clientY - rect.top;
     const lineIndex = Math.floor(y / lineHeight);
 
-    console.log(`📍 Calculated line index: ${lineIndex}, y: ${y}, lineHeight: ${lineHeight}`);
-
     // Get the actual lines from the code block
     const codeText = codeBlock.textContent;
     const lines = codeText.split('\n').filter(line => line.trim() !== '');
 
-    console.log(`📝 Found ${lines.length} lines in code block`);
-
     if (lineIndex >= 0 && lineIndex < lines.length) {
         const explanations = getAlgorithmExplanations(isIterative);
         const explanation = explanations[lineIndex] || `Baris ${lineIndex + 1} algoritma ${isIterative ? 'iteratif' : 'rekursif'}`;
-
-        console.log(`💬 Showing tooltip for line ${lineIndex + 1}: ${explanation.substring(0, 50)}...`);
 
         // Create tooltip data
         const tooltipData = {
@@ -452,7 +444,6 @@ function handleCodeLineHover(event, codeBlock, isIterative) {
 
         showCodeTooltipForLine(event, tooltipData);
     } else {
-        console.log('🚫 Line index out of range, hiding tooltip');
         hideCodeTooltip();
     }
 }
