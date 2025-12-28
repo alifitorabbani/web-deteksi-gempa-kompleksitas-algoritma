@@ -365,8 +365,8 @@ function setupAlgorithmTooltips() {
     codeBlocks.forEach((block, index) => {
         const isIterative = index === 0;
 
-        // Add subtle blue theme styling
-        block.style.cursor = 'text'; // Normal text cursor
+        // Add pointer cursor to indicate clickable
+        block.style.cursor = 'pointer';
         block.style.transition = 'background-color 0.2s ease';
 
         // Add event listeners
@@ -376,17 +376,15 @@ function setupAlgorithmTooltips() {
 
         block.addEventListener('mouseleave', (e) => {
             block.style.backgroundColor = '';
-            hideCodeTooltip();
         });
 
-        // Add mousemove for line detection - more reliable approach
-        block.addEventListener('mousemove', (event) => {
-            // Simple approach: show tooltip based on mouse position
+        // Add click for line selection
+        block.addEventListener('click', (event) => {
             const rect = block.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
 
-            // Only show tooltip if mouse is within the text area
+            // Only process if click is within the text area
             if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
                 // Estimate which line based on Y position
                 const lineHeight = 20;
@@ -398,8 +396,10 @@ function setupAlgorithmTooltips() {
 
                 if (lineIndex >= 0 && lineIndex < lines.length) {
                     const explanations = getAlgorithmExplanations(isIterative);
-                    const explanation = explanations[lineIndex] || `Baris ${lineIndex + 1} algoritma ${isIterative ? 'iteratif' : 'rekursif'}`;
-                    showInlineTooltip(event, explanation);
+                    const commentObj = explanations[lineIndex];
+                    if (commentObj) {
+                        showDetailedCommentModal(event, commentObj);
+                    }
                 }
             }
         });
@@ -495,55 +495,239 @@ function showInlineTooltip(event, message) {
 function getAlgorithmExplanations(isIterative) {
     if (isIterative) {
         return [
-            "Mendefinisikan fungsi utama analisis gempa dengan pendekatan iteratif",
-            "Memulai timer untuk mengukur waktu eksekusi algoritma",
-            "Inisialisasi variabel counter untuk menghitung total gempa",
-            "Inisialisasi variabel untuk menghitung jumlah total magnitudo",
-            "Inisialisasi counter untuk gempa dengan magnitudo ≥5.0",
-            "Inisialisasi variabel minimum magnitudo dengan nilai tak terhingga",
-            "Inisialisasi variabel maksimum magnitudo dengan nilai negatif tak terhingga",
-            "Inisialisasi variabel untuk menghitung kuadrat magnitudo",
-            "Memulai loop untuk memproses setiap data gempa dalam array",
-            "Mengekstrak nilai magnitudo dari objek geoJSON feature",
-            "Menambah counter total gempa sebesar 1",
-            "Menambahkan magnitudo ke total sum untuk perhitungan rata-rata",
-            "Menambahkan kuadrat magnitudo untuk perhitungan variansi",
-            "Memperbarui nilai minimum jika magnitudo lebih kecil",
-            "Memperbarui nilai maksimum jika magnitudo lebih besar",
-            "Menambah counter gempa berbahaya jika magnitudo ≥5.0",
-            "Mengakhiri loop dan memulai perhitungan statistik final",
-            "Menghitung rata-rata magnitudo dari total sum",
-            "Menghitung variansi menggunakan formula statistik",
-            "Menghitung standar deviasi sebagai akar kuadrat variansi",
-            "Menghitung persentase gempa berbahaya dari total",
-            "Menghentikan timer dan menghitung total waktu eksekusi",
-            "Mengembalikan objek hasil analisis lengkap"
+            {
+                explanation: "Mendefinisikan fungsi utama analisis gempa dengan pendekatan iteratif",
+                function: "Fungsi ini menganalisis array data gempa menggunakan loop for untuk menghitung statistik",
+                example: "analyze_earthquakes_iterative([{'properties': {'mag': 5.2}}, {'properties': {'mag': 4.1}}])"
+            },
+            {
+                explanation: "Memulai timer untuk mengukur waktu eksekusi algoritma",
+                function: "Menggunakan time.time() untuk mendapatkan timestamp awal sebelum eksekusi",
+                example: "start_time = time.time()  # Mengembalikan waktu dalam detik sejak epoch"
+            },
+            {
+                explanation: "Inisialisasi variabel counter untuk menghitung total gempa",
+                function: "Variabel ini akan diincrement untuk setiap feature yang diproses",
+                example: "total_gempa = 0  # Akan menjadi 2 setelah memproses 2 gempa"
+            },
+            {
+                explanation: "Inisialisasi variabel untuk menghitung jumlah total magnitudo",
+                function: "Akumulator untuk menjumlahkan semua nilai magnitudo gempa",
+                example: "sum_magnitudo = 0.0  # Akan menjadi 9.3 setelah menjumlahkan 5.2 + 4.1"
+            },
+            {
+                explanation: "Inisialisasi counter untuk gempa dengan magnitudo ≥5.0",
+                function: "Menghitung jumlah gempa yang dianggap berbahaya (magnitudo tinggi)",
+                example: "jumlah_berbahaya = 0  # Akan menjadi 1 jika ada gempa dengan mag >= 5.0"
+            },
+            {
+                explanation: "Inisialisasi variabel minimum magnitudo dengan nilai tak terhingga",
+                function: "Menggunakan float('inf') sebagai nilai awal untuk menemukan magnitudo terkecil",
+                example: "min_mag = float('inf')  # Akan diperbarui menjadi 4.1 setelah perbandingan"
+            },
+            {
+                explanation: "Inisialisasi variabel maksimum magnitudo dengan nilai negatif tak terhingga",
+                function: "Menggunakan float('-inf') sebagai nilai awal untuk menemukan magnitudo terbesar",
+                example: "max_mag = float('-inf')  # Akan diperbarui menjadi 5.2 setelah perbandingan"
+            },
+            {
+                explanation: "Inisialisasi variabel untuk menghitung kuadrat magnitudo",
+                function: "Diperlukan untuk perhitungan variansi statistik menggunakan formula E[X²]",
+                example: "sum_squares = 0.0  # Akan menjadi 27.25 + 16.81 = 44.06"
+            },
+            {
+                explanation: "Memulai loop untuk memproses setiap data gempa dalam array",
+                function: "Iterasi melalui setiap feature dalam array dengan kompleksitas O(n)",
+                example: "for feature in features:  # features adalah list dari geoJSON features"
+            },
+            {
+                explanation: "Mengekstrak nilai magnitudo dari objek geoJSON feature",
+                function: "Mengakses nested dictionary untuk mendapatkan nilai magnitudo",
+                example: "magnitudo = feature['properties']['mag']  # Mengambil nilai 5.2 dari properties"
+            },
+            {
+                explanation: "Menambah counter total gempa sebesar 1",
+                function: "Increment counter untuk setiap gempa yang diproses",
+                example: "total_gempa += 1  # Dari 0 menjadi 1, kemudian 2, dst."
+            },
+            {
+                explanation: "Menambahkan magnitudo ke total sum untuk perhitungan rata-rata",
+                function: "Akumulasi nilai magnitudo untuk perhitungan mean",
+                example: "sum_magnitudo += magnitudo  # 0.0 + 5.2 = 5.2, kemudian + 4.1 = 9.3"
+            },
+            {
+                explanation: "Menambahkan kuadrat magnitudo untuk perhitungan variansi",
+                function: "Menghitung sum dari kuadrat nilai untuk formula variansi",
+                example: "sum_squares += magnitudo ** 2  # 5.2² = 27.04, kemudian + 4.1² = 16.81"
+            },
+            {
+                explanation: "Memperbarui nilai minimum jika magnitudo lebih kecil",
+                function: "Membandingkan dan mengupdate nilai minimum menggunakan min()",
+                example: "min_mag = min(min_mag, magnitudo)  # min(inf, 5.2) = 5.2, kemudian min(5.2, 4.1) = 4.1"
+            },
+            {
+                explanation: "Memperbarui nilai maksimum jika magnitudo lebih besar",
+                function: "Membandingkan dan mengupdate nilai maksimum menggunakan max()",
+                example: "max_mag = max(max_mag, magnitudo)  # max(-inf, 5.2) = 5.2, kemudian max(5.2, 4.1) = 5.2"
+            },
+            {
+                explanation: "Menambah counter gempa berbahaya jika magnitudo ≥5.0",
+                function: "Conditional increment untuk gempa dengan magnitudo tinggi",
+                example: "if magnitudo >= 5.0: jumlah_berbahaya += 1  # Jika 5.2 >= 5.0, counter +1"
+            },
+            {
+                explanation: "Mengakhiri loop dan memulai perhitungan statistik final",
+                function: "Setelah semua data diproses, hitung statistik akhir",
+                example: "# Loop selesai, sekarang hitung rata-rata, variansi, dll."
+            },
+            {
+                explanation: "Menghitung rata-rata magnitudo dari total sum",
+                function: "Mean = total sum dibagi jumlah data, dengan pengecekan pembagian nol",
+                example: "rata_rata = 9.3 / 2 = 4.65  # Jika total_gempa > 0"
+            },
+            {
+                explanation: "Menghitung variansi menggunakan formula statistik",
+                function: "Variansi = E[X²] - (E[X])² untuk mengukur sebaran data",
+                example: "variansi = (44.06 / 2) - (4.65 ** 2) = 22.03 - 21.6225 = 0.4075"
+            },
+            {
+                explanation: "Menghitung standar deviasi sebagai akar kuadrat variansi",
+                function: "Std dev = sqrt(variansi) untuk mengukur deviasi standar",
+                example: "std_dev = math.sqrt(0.4075) ≈ 0.638  # Akar kuadrat variansi"
+            },
+            {
+                explanation: "Menghitung persentase gempa berbahaya dari total",
+                function: "Persentase = (jumlah berbahaya / total) * 100",
+                example: "persentase = (1 / 2) * 100 = 50.0%  # 1 dari 2 gempa berbahaya"
+            },
+            {
+                explanation: "Menghentikan timer dan menghitung total waktu eksekusi",
+                function: "Mengukur waktu yang dibutuhkan algoritma untuk menyelesaikan",
+                example: "execution_time = time.time() - start_time  # Total waktu dalam detik"
+            },
+            {
+                explanation: "Mengembalikan objek hasil analisis lengkap",
+                function: "Return dictionary berisi semua statistik yang dihitung",
+                example: "return {'total_gempa': 2, 'rata_rata_magnitudo': 4.65, ...}"
+            }
         ];
     } else {
         return [
-            "Mendefinisikan fungsi rekursif untuk analisis data gempa",
-            "Parameter index untuk melacak posisi dalam array",
-            "Parameter total_gempa untuk akumulasi counter",
-            "Parameter sum_magnitudo untuk akumulasi total magnitudo",
-            "Parameter jumlah_berbahaya untuk menghitung gempa ≥5.0",
-            "Parameter sum_squares untuk perhitungan variansi",
-            "Parameter min_mag untuk tracking nilai minimum",
-            "Parameter max_mag untuk tracking nilai maksimum",
-            "Memeriksa base case: apakah telah mencapai akhir array",
-            "Menghitung rata-rata dari total sum magnitudo",
-            "Menghitung variansi menggunakan formula E[X²] - (E[X])²",
-            "Menghitung standar deviasi sebagai akar kuadrat variansi",
-            "Menghitung persentase gempa berbahaya",
-            "Mengembalikan objek hasil analisis lengkap",
-            "Mengekstrak magnitudo dari feature saat ini",
-            "Menambah counter total gempa",
-            "Menambahkan magnitudo ke sum untuk rata-rata",
-            "Menambahkan kuadrat magnitudo untuk variansi",
-            "Memperbarui nilai minimum magnitudo",
-            "Memperbarui nilai maksimum magnitudo",
-            "Menambah counter gempa berbahaya jika memenuhi syarat",
-            "Melakukan pemanggilan rekursif dengan parameter terbaru",
-            "Meneruskan semua state ke pemanggilan rekursif berikutnya"
+            {
+                explanation: "Mendefinisikan fungsi rekursif untuk analisis data gempa",
+                function: "Fungsi dengan multiple parameters untuk akumulasi state rekursif",
+                example: "analyze_earthquakes_recursive(features, 0, 0, 0.0, 0, 0.0, inf, -inf)"
+            },
+            {
+                explanation: "Parameter index untuk melacak posisi dalam array",
+                function: "Menunjukkan elemen mana yang sedang diproses dalam rekursi",
+                example: "index=0  # Memproses elemen pertama, kemudian 1, 2, dst."
+            },
+            {
+                explanation: "Parameter total_gempa untuk akumulasi counter",
+                function: "Menghitung total gempa yang telah diproses",
+                example: "total_gempa=0  # Akan bertambah 1 setiap rekursi"
+            },
+            {
+                explanation: "Parameter sum_magnitudo untuk akumulasi total magnitudo",
+                function: "Menjumlahkan semua magnitudo yang telah diproses",
+                example: "sum_magnitudo=0.0  # Akumulasi nilai magnitudo"
+            },
+            {
+                explanation: "Parameter jumlah_berbahaya untuk menghitung gempa ≥5.0",
+                function: "Counter untuk gempa dengan magnitudo tinggi",
+                example: "jumlah_berbahaya=0  # Increment jika mag >= 5.0"
+            },
+            {
+                explanation: "Parameter sum_squares untuk perhitungan variansi",
+                function: "Akumulasi kuadrat magnitudo untuk statistik",
+                example: "sum_squares=0.0  # Sum dari magnitudo^2"
+            },
+            {
+                explanation: "Parameter min_mag untuk tracking nilai minimum",
+                function: "Menyimpan magnitudo terkecil yang ditemukan",
+                example: "min_mag=float('inf')  # Akan diperbarui ke nilai terkecil"
+            },
+            {
+                explanation: "Parameter max_mag untuk tracking nilai maksimum",
+                function: "Menyimpan magnitudo terbesar yang ditemukan",
+                example: "max_mag=float('-inf')  # Akan diperbarui ke nilai terbesar"
+            },
+            {
+                explanation: "Memeriksa base case: apakah telah mencapai akhir array",
+                function: "Condition untuk menghentikan rekursi ketika semua elemen diproses",
+                example: "if index >= len(features):  # Jika index = 2, len = 2, maka stop"
+            },
+            {
+                explanation: "Menghitung rata-rata dari total sum magnitudo",
+                function: "Mean = sum dibagi total gempa dengan safety check",
+                example: "rata_rata = 9.3 / 2 = 4.65 jika total_gempa > 0"
+            },
+            {
+                explanation: "Menghitung variansi menggunakan formula E[X²] - (E[X])²",
+                function: "Variansi = rata-rata kuadrat - kuadrat rata-rata",
+                example: "variansi = (44.06/2) - (4.65)^2 = 22.03 - 21.62 = 0.41"
+            },
+            {
+                explanation: "Menghitung standar deviasi sebagai akar kuadrat variansi",
+                function: "Std dev = sqrt(variansi) untuk mengukur sebaran",
+                example: "std_dev = math.sqrt(0.41) ≈ 0.64"
+            },
+            {
+                explanation: "Menghitung persentase gempa berbahaya",
+                function: "Persentase = (berbahaya / total) * 100",
+                example: "persentase = (1 / 2) * 100 = 50.0%"
+            },
+            {
+                explanation: "Mengembalikan objek hasil analisis lengkap",
+                function: "Return dictionary dengan semua statistik terhitung",
+                example: "return {'total_gempa': 2, 'rata_rata_magnitudo': 4.65, ...}"
+            },
+            {
+                explanation: "Mengekstrak magnitudo dari feature saat ini",
+                function: "Mengambil nilai magnitudo dari elemen array yang sedang diproses",
+                example: "magnitudo = features[index]['properties']['mag']  # Ambil mag dari elemen ke-index"
+            },
+            {
+                explanation: "Menambah counter total gempa",
+                function: "Increment total counter untuk setiap elemen yang diproses",
+                example: "new_total_gempa = total_gempa + 1  # 0 + 1 = 1"
+            },
+            {
+                explanation: "Menambahkan magnitudo ke sum untuk rata-rata",
+                function: "Akumulasi magnitudo untuk perhitungan mean",
+                example: "new_sum_magnitudo = sum_magnitudo + magnitudo  # 0.0 + 5.2 = 5.2"
+            },
+            {
+                explanation: "Menambahkan kuadrat magnitudo untuk variansi",
+                function: "Menghitung sum kuadrat untuk formula variansi",
+                example: "new_sum_squares = sum_squares + magnitudo ** 2  # 0.0 + 27.04 = 27.04"
+            },
+            {
+                explanation: "Memperbarui nilai minimum magnitudo",
+                function: "Update min_mag jika magnitudo saat ini lebih kecil",
+                example: "new_min_mag = min(min_mag, magnitudo)  # min(inf, 5.2) = 5.2"
+            },
+            {
+                explanation: "Memperbarui nilai maksimum magnitudo",
+                function: "Update max_mag jika magnitudo saat ini lebih besar",
+                example: "new_max_mag = max(max_mag, magnitudo)  # max(-inf, 5.2) = 5.2"
+            },
+            {
+                explanation: "Menambah counter gempa berbahaya jika memenuhi syarat",
+                function: "Increment counter jika magnitudo >= 5.0",
+                example: "new_jumlah_berbahaya = jumlah_berbahaya + (1 if magnitudo >= 5.0 else 0)"
+            },
+            {
+                explanation: "Melakukan pemanggilan rekursif dengan parameter terbaru",
+                function: "Rekursi dengan index + 1 dan state terupdate",
+                example: "return analyze_earthquakes_recursive(features, 1, 1, 5.2, 1, 27.04, 5.2, 5.2)"
+            },
+            {
+                explanation: "Meneruskan semua state ke pemanggilan rekursif berikutnya",
+                function: "Mengirim semua variabel terupdate ke rekursi berikutnya",
+                example: "# Semua parameter dikirim ke call berikutnya untuk melanjutkan akumulasi"
+            }
         ];
     }
 }
@@ -551,7 +735,7 @@ function getAlgorithmExplanations(isIterative) {
 // Legacy functions removed - using showInlineTooltip now
 
 function hideCodeTooltip() {
-    // Remove existing tooltips
-    const existingTooltips = document.querySelectorAll('.code-tooltip, .inline-tooltip');
+    // Remove existing tooltips and modals
+    const existingTooltips = document.querySelectorAll('.code-tooltip, .inline-tooltip, .comment-modal');
     existingTooltips.forEach(tooltip => tooltip.remove());
 }
