@@ -164,6 +164,11 @@ document.addEventListener('DOMContentLoaded', function() {
             data.earthquakes.forEach((eq, index) => {
                 const row = document.createElement('tr');
 
+                // Highlight dangerous earthquakes (magnitude >= 5.0)
+                if (eq.magnitude >= 5.0) {
+                    row.classList.add('dangerous-earthquake');
+                }
+
                 // Numbering column
                 const numCell = document.createElement('td');
                 numCell.textContent = index + 1;

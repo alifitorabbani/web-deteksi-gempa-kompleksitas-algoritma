@@ -842,6 +842,15 @@ button:disabled {
   box-shadow: var(--shadow-sm);
 }
 
+#earthquake-table tr.dangerous-earthquake {
+  background-color: #fee2e2 !important;
+  border-left: 4px solid #dc3545;
+}
+
+#earthquake-table tr.dangerous-earthquake:hover {
+  background-color: #fcd7d7 !important;
+}
+
 /* Loading and Error */
 #loading {
   text-align: center;
