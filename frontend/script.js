@@ -22,8 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     loadBtn.addEventListener('click', loadEarthquakeData);
 
-    // Algorithm tooltips removed as per user request
-
     async function loadEarthquakeData() {
         // Show loading, hide table and error
         loading.style.display = 'block';
@@ -340,13 +338,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Initialize interactive algorithm code explanations after data is loaded
-    // This will be called in loadEarthquakeData after results are displayed
-
-
 });
 
-function setupAlgorithmTooltips() {
     console.log('🔧 Setting up algorithm tooltips...');
 
     // Find code blocks
