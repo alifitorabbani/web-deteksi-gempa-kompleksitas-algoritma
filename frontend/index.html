@@ -1,68 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analisis Data Gempa - Iteratif vs Rekursif | Stack Overflow Demo</title>
+    <title>Earthquake Data Analysis Platform</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <header>
-        <h1>Analisis Data Gempa Dunia - Iteratif vs Rekursif</h1>
-        <p>Data Real-Time USGS (Magnitudo ≥ 2.5) dengan Demonstrasi Stack Overflow & Caching Pintar</p>
+        <div class="container">
+            <h1>Earthquake Data Analysis Platform</h1>
+            <p>Real-time seismic data analysis with algorithm complexity comparison</p>
+        </div>
     </header>
 
-    <div class="container">
-        <div class="description">
-            <p>Aplikasi analisis data gempa dunia real-time dengan perbandingan algoritma iteratif vs rekursif. Data diambil langsung dari USGS (United States Geological Survey) dengan magnitudo ≥ 2.5 dari berbagai periode historis. Mendukung input size hingga 20,000+ records dengan caching cerdas untuk performa optimal.</p>
-            <ol>
-                <li><strong>Kasus Terbaik:</strong> Analisis kompleksitas waktu dan ruang</li>
-                <li><strong>Kasus Terburuk:</strong> Demonstrasi stack overflow pada rekursif</li>
-                <li><strong>Kasus Rata-Rata:</strong> Performa praktis pada data real</li>
-                <li><strong>Kompleksitas Waktu:</strong> O(n) untuk kedua algoritma</li>
-                <li><strong>Kesuaian Algoritma:</strong> Iteratif untuk skala besar, rekursif untuk ≤1200</li>
-            </ol>
-            <p><strong>✅ Data 100% Real USGS:</strong> Mengambil data langsung dari API resmi tanpa data sintetis.</p>
-            <p><strong>🔄 Caching Pintar:</strong> Cache per ukuran sample untuk loading instan pada request berulang.</p>
-            <p><strong>⚡ Stack Overflow Demo:</strong> Algoritma rekursif gagal di >1200 records, iteratif berhasil hingga 20,000+.</p>
-            <p><strong>📊 Input Size Fleksibel:</strong> Dari 1 hingga 20,000+ records dengan validasi real-time.</p>
+    <main id="main-app">
+        <div class="back-button-container">
+            <a href="dashboard.html" class="back-button">⬅️ Back to Dashboard</a>
         </div>
+        <section id="controls" class="controls-section">
+            <div class="container">
+                <div class="controls-card">
+                    <h3>Data Parameters</h3>
+                    <div class="controls-grid">
+                        <div class="control-group">
+                            <label for="size-select">Sample Size:</label>
+                            <select id="size-select">
+                                <option value="1">1</option>
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="500">500</option>
+                                <option value="1000">1000</option>
+                                <option value="2000">2000</option>
+                                <option value="5000">5000</option>
+                                <option value="10000">10000</option>
+                            </select>
+                        </div>
 
-        <div class="controls">
-            <div class="control-group">
-                <label for="size-select">Ukuran Sample:</label>
-                <select id="size-select">
-                    <option value="1">1</option>
-                    <option value="10" selected>10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                    <option value="500">500</option>
-                    <option value="1000">1000</option>
-                    <option value="2000">2000</option>
-                    <option value="5000">5000</option>
-                    <option value="10000">10000</option>
-                </select>
+                        <div class="control-group">
+                            <label for="sort-select">Sort By:</label>
+                            <select id="sort-select">
+                                <option value="time" selected>Time (Newest First)</option>
+                                <option value="magnitude">Magnitude (Highest First)</option>
+                            </select>
+                        </div>
+
+                        <div class="control-group">
+                            <label>&nbsp;</label>
+                            <button id="load-btn">Load Earthquake Data</button>
+                        </div>
+                    </div>
+                </div>
             </div>
-
-            <div class="control-group">
-                <label for="sort-select">Urutkan Berdasarkan:</label>
-                <select id="sort-select">
-                    <option value="time" selected>Waktu (Terbaru dulu)</option>
-                    <option value="magnitude">Magnitudo (Tertinggi dulu)</option>
-                </select>
-            </div>
-
-
-
-            <div class="control-group">
-                <label>&nbsp;</label>
-                <button id="load-btn">Muat Data Gempa</button>
-            </div>
-
-        </div>
+        </section>
 
         <div id="loading" style="display: none; text-align: center; margin: 20px;">
             <p id="loading-text">Memuat data gempa...</p>
@@ -77,8 +71,12 @@
             </div>
         </div>
 
-        <div id="results" style="display: none;">
+        <div id="results">
             <h2>Analisis Kompleksitas Algoritma</h2>
+            <div style="text-align: center; padding: 2rem; background: #f8f9fa; border-radius: 8px; margin-bottom: 2rem;">
+                <p style="color: #666; font-size: 1.1rem;">Klik "Load Earthquake Data" untuk memuat dan menganalisis data gempa dari USGS</p>
+                <p style="color: #888; font-size: 0.9rem;">Data akan ditampilkan di sini setelah dimuat</p>
+            </div>
 
             <div class="performance-chart">
                 <h3>Grafik Performa untuk Ukuran Sample Saat Ini</h3>
@@ -145,7 +143,7 @@
                         <p>Min Magnitudo: <span id="iterative-min"></span></p>
                         <p>Max Magnitudo: <span id="iterative-max"></span></p>
                         <p>Standar Deviasi: <span id="iterative-std"></span></p>
-                        <p>Jumlah Gempa Berbahaya (≥5.0): <span id="iterative-berbahaya"></span> (<span id="iterative-persen"></span>%)</p>
+                        <p>Jumlah Gempa Berbahaya (≥5.0): <span id="iterative-berbahaya" class="danger-count"></span></p>
                         <p>Waktu Eksekusi: <span id="iterative-waktu"></span> detik</p>
                     </div>
                     <div class="complexity-info">
@@ -161,19 +159,17 @@
                         <div class="conclusion-content">
                             <p><strong>✅ Kelebihan:</strong></p>
                             <ul>
-                                <li>Kompleksitas ruang O(1) menunjukkan efisiensi memori yang optimal, menghindari alokasi stack berlebih.</li>
-                                <li>Absennya risiko stack overflow memastikan stabilitas eksekusi pada dataset hingga 20,000+ records.</li>
-                                <li>Sesuai untuk pemrosesan data seismik berskala global dengan kompleksitas waktu O(n) yang linier.</li>
-                                <li>Implementasi imperatif yang sederhana memfasilitasi pemeliharaan dan debugging kode.</li>
-                                <li>Konsistensi performa temporal independen dari variasi ukuran input, ideal untuk aplikasi real-time.</li>
-                                <li>Dapat menangani dataset tak terbatas tanpa batas recursion limit sistem.</li>
+                                <li>Efisiensi memori O(1) - tidak ada alokasi stack berlebih</li>
+                                <li>Stabilitas tinggi - tidak ada risiko stack overflow</li>
+                                <li>Performa konsisten untuk dataset besar hingga 20,000+ records</li>
+                                <li>Implementasi sederhana dan mudah di-maintain</li>
                             </ul>
                             <p><strong>❌ Kekurangan:</strong></p>
                             <ul>
-                                <li>Kurang ekspresif dalam representasi masalah matematika rekursif secara natural.</li>
-                                <li>Memerlukan variabel state eksplisit untuk akumulasi hasil, meningkatkan kompleksitas kode.</li>
+                                <li>Kurang natural untuk masalah rekursif matematis</li>
+                                <li>Perlu state eksplisit untuk akumulasi data</li>
                             </ul>
-                            <p><strong>📊 Rekomendasi:</strong> Berdasarkan analisis kompleksitas algoritma, pendekatan iteratif direkomendasikan untuk analisis data gempa real-time karena skalabilitasnya pada dataset seismik global hingga 20,000+ records dengan kompleksitas O(n) waktu dan O(1) ruang yang stabil.</p>
+                            <p><strong>📊 Rekomendasi:</strong> Pendekatan iteratif direkomendasikan untuk analisis data seismik skala besar dengan kompleksitas O(n) waktu dan O(1) ruang.</p>
                         </div>
                     </div>
                 </div>
@@ -208,7 +204,7 @@
                             <p>Min Magnitudo: <span id="recursive-min"></span></p>
                             <p>Max Magnitudo: <span id="recursive-max"></span></p>
                             <p>Standar Deviasi: <span id="recursive-std"></span></p>
-                            <p>Jumlah Gempa Berbahaya (≥5.0): <span id="recursive-berbahaya"></span> (<span id="recursive-persen"></span>%)</p>
+                            <p>Jumlah Gempa Berbahaya (≥5.0): <span id="recursive-berbahaya" class="danger-count"></span></p>
                             <p>Waktu Eksekusi: <span id="recursive-waktu"></span> detik</p>
                         </div>
                     </div>
@@ -248,7 +244,11 @@
         </div>
 
 
-        <div class="table-container" style="display: none;">
+        <div class="table-container">
+            <div id="table-placeholder" style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 8px; margin-bottom: 1rem;">
+                <p style="color: #666; font-size: 1.1rem;">Data gempa akan ditampilkan di sini setelah dimuat</p>
+                <p style="color: #888; font-size: 0.9rem;">Gunakan kontrol di atas untuk memuat data dari USGS</p>
+            </div>
             <table id="earthquake-table">
                 <thead>
                     <tr>
@@ -270,12 +270,17 @@
         <div id="error" style="display: none; color: red; text-align: center; margin: 20px;">
             <p>Terjadi kesalahan memuat data. Silakan coba lagi.</p>
         </div>
+
     </div>
 
     <footer>
-        <p>Dibuat oleh <a href="https://pddikti.kemdiktisaintek.go.id/detail-mahasiswa/Q_OUqd0Dt6dg4FWhBkxgBYgI3kZc7nWMnKH9gY9L_hvVmZw-jYSMwVDWdktgvQ5NF4Pa6g==" target="_blank">Alifito Rabbani Cahyono</a> & <a href="https://pddikti.kemdiktisaintek.go.id/detail-mahasiswa/9VllB9kncfa9WbU2pCle7iQ683xJGOOuQy-ZKf2CJeOnLSxvCTGhCLlpCj-KArPEQiqh5Q==" target="_blank">Nadisha Auliandini Nurhizah</a> - 2025</p>
-        <p>Data disediakan oleh <a href="https://earthquake.usgs.gov/" target="_blank">USGS Earthquake Hazards Program</a></p>
-        <p><a href="https://earthquake.usgs.gov/earthquakes/map/?extent=1.58183,-154.77539&extent=62.99516,-35.24414" target="_blank">Lihat Peta Gempa Global USGS</a></p>
+        <div class="container">
+            <div class="footer-links">
+                <a href="https://www.usgs.gov/programs/earthquake-hazards" target="_blank">USGS Earthquake Hazards Program</a> |
+                <a href="https://earthquake.usgs.gov/earthquakes/map/" target="_blank">View USGS Earthquake Map</a>
+            </div>
+            <p>&copy; 2025 Earthquake Data Analysis Platform. All rights reserved.</p>
+        </div>
     </footer>
 
     <script src="script.js"></script>

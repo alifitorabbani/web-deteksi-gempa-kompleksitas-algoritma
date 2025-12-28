@@ -110,8 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('iterative-min').textContent = iterative.min_magnitudo;
             document.getElementById('iterative-max').textContent = iterative.max_magnitudo;
             document.getElementById('iterative-std').textContent = iterative.standar_deviasi;
-            document.getElementById('iterative-berbahaya').textContent = iterative.jumlah_berbahaya;
-            document.getElementById('iterative-persen').textContent = iterative.persentase_berbahaya;
+            document.getElementById('iterative-berbahaya').textContent = `${iterative.jumlah_berbahaya} (${iterative.persentase_berbahaya}%)`;
             document.getElementById('iterative-waktu').textContent = iterative.waktu_eksekusi;
 
             // Recursive results
@@ -132,8 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('recursive-min').textContent = recursive.min_magnitudo;
                 document.getElementById('recursive-max').textContent = recursive.max_magnitudo;
                 document.getElementById('recursive-std').textContent = recursive.standar_deviasi;
-                document.getElementById('recursive-berbahaya').textContent = recursive.jumlah_berbahaya;
-                document.getElementById('recursive-persen').textContent = recursive.persentase_berbahaya;
+                document.getElementById('recursive-berbahaya').textContent = `${recursive.jumlah_berbahaya} (${recursive.persentase_berbahaya}%)`;
                 document.getElementById('recursive-waktu').textContent = recursive.waktu_eksekusi;
                 recursiveTime = recursive.waktu_eksekusi;
             }
@@ -157,6 +155,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Clear previous data
             tbody.innerHTML = '';
+
+            // Hide table placeholder
+            const tablePlaceholder = document.getElementById('table-placeholder');
+            if (tablePlaceholder) tablePlaceholder.style.display = 'none';
 
             // Populate table
             data.earthquakes.forEach((eq, index) => {

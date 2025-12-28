@@ -15,7 +15,7 @@ import logging
 # Increase recursion limit to allow deeper recursion for demonstration
 sys.setrecursionlimit(3000)  # Allow up to 3000 recursive calls for maximum stack overflow demonstration
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../frontend', static_url_path='')
 CORS(app)
 
 # Configure logging
@@ -31,7 +31,7 @@ limiter = Limiter(
 
 # High-performance real-time data with optimized cache
 CACHE_DIR = "cache"
-CACHE_DURATION = 600  # 10 minutes cache for stable performance
+CACHE_DURATION = 3600  # 1 hour cache for better performance
 DATA_VERSION = "v9"  # Force cache invalidation for latest data
 
 # Ensure cache directory exists
@@ -48,10 +48,10 @@ def get_cache_key(continent, size):
 
 def load_from_cache(cache_key):
     """Load data from cache file"""
-    cache_file = os.path.join(CACHE_DIR, f"{cache_key}.json")
+    cache_file = os.path.join(CACHE_DIR, f"{cache_key}.json.gz")
     if os.path.exists(cache_file):
         try:
-            with open(cache_file, 'r') as f:
+            with gzip.open(cache_file, 'rt') as f:
                 cached_data = json.load(f)
                 # Check if cache is still valid
                 if time.time() - cached_data.get('timestamp', 0) < CACHE_DURATION:
@@ -194,6 +194,14 @@ def fetch_earthquake_data(target_count, continent_filter='all'):
         print(f"       Continent: {continent_filter}")
     return result_data
 
+@app.route('/')
+def index():
+    return app.send_static_file('dashboard.html')
+
+@app.route('/analysis')
+def analysis():
+    return app.send_static_file('index.html')
+
 @app.route('/earthquakes', methods=['GET'])
 def get_earthquakes():
     size = int(request.args.get('size', 10))
@@ -235,8 +243,18 @@ def get_earthquakes():
                 print(f"Live feed error: {e}, using comprehensive fetch...")
                 data = fetch_earthquake_data(size, 'all')
         else:
-            # For larger sizes, use comprehensive fetch directly
-            data = fetch_earthquake_data(size, 'all')
+            # For larger sizes, try to slice from cached 20000 records first
+            large_cache_key = get_cache_key('all', 20000)
+            large_data = load_from_cache(large_cache_key)
+            if large_data and len(large_data['features']) >= size:
+                data = {
+                    'type': 'FeatureCollection',
+                    'features': large_data['features'][:size]
+                }
+                print(f"Sliced {size} records from cached 20000 records")
+            else:
+                # Fall back to comprehensive fetch
+                data = fetch_earthquake_data(size, 'all')
 
         # Cache the result
         if data and len(data['features']) >= size:
@@ -394,14 +412,21 @@ def get_earthquakes():
             'url': props['url']
         })
 
+    analysis_data = {
+        'iterative': iterative_result,
+        'recursive': recursive_result if recursive_result else {'error': recursive_error},
+        'complexity_analysis': complexity_analysis
+    }
+
+    # Cache the computed analysis
+    with cache_lock:
+        save_to_cache(analysis_cache_key, analysis_data)
+    print(f"Cached analysis for size {size}")
+
     response_data = {
         'earthquakes': earthquakes,
         'total': len(earthquakes),
-        'analysis': {
-            'iterative': iterative_result,
-            'recursive': recursive_result if recursive_result else {'error': recursive_error},
-            'complexity_analysis': complexity_analysis
-        },
+        'analysis': analysis_data,
         'timestamp': datetime.now().isoformat(),
         'cached': True  # Data loaded from static cache
     }
