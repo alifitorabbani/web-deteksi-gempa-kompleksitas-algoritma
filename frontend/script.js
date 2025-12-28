@@ -378,13 +378,13 @@ function setupAlgorithmTooltips() {
             block.style.backgroundColor = '';
         });
 
-        // Add click for line selection
-        block.addEventListener('click', (event) => {
+        // Add hover for tooltip display
+        block.addEventListener('mousemove', (event) => {
             const rect = block.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
 
-            // Only process if click is within the text area
+            // Only show tooltip if mouse is within the text area
             if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
                 // Estimate which line based on Y position
                 const lineHeight = 20;
@@ -398,7 +398,7 @@ function setupAlgorithmTooltips() {
                     const explanations = getAlgorithmExplanations(isIterative);
                     const commentObj = explanations[lineIndex];
                     if (commentObj) {
-                        showDetailedCommentModal(event, commentObj);
+                        showInlineTooltip(event, commentObj.explanation);
                     }
                 }
             }
