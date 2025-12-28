@@ -362,35 +362,28 @@ function setupAlgorithmTooltips() {
     const codeBlocks = document.querySelectorAll('.algorithm-code pre code');
     console.log('📝 Found code blocks:', codeBlocks.length);
 
-    if (codeBlocks.length === 0) {
-        console.log('❌ No code blocks found!');
-        return;
-    }
-
     codeBlocks.forEach((block, index) => {
         const isIterative = index === 0;
         console.log(`🎯 Setting up block ${index + 1} (${isIterative ? 'iterative' : 'recursive'})`);
 
-        // Add visual indicator
-        block.style.border = '2px solid red';
-        block.style.background = 'yellow';
-        block.style.cursor = 'pointer';
+        // Add subtle blue theme styling
+        block.style.cursor = 'help';
+        block.style.transition = 'background-color 0.2s ease';
 
         // Add event listeners
         block.addEventListener('mouseenter', (e) => {
             console.log('🎯 Mouse entered code block');
-            block.style.background = 'lightgreen';
+            block.style.backgroundColor = 'rgba(49, 130, 206, 0.05)';
         });
 
         block.addEventListener('mouseleave', (e) => {
             console.log('🚫 Mouse left code block');
-            block.style.background = 'yellow';
+            block.style.backgroundColor = '';
             hideCodeTooltip();
         });
 
         // Add mousemove for line detection
         block.addEventListener('mousemove', (event) => {
-            console.log('🖱️ Mouse moved in code block');
             handleSimpleLineHover(event, block, isIterative);
         });
 
@@ -401,38 +394,35 @@ function setupAlgorithmTooltips() {
 }
 
 function handleSimpleLineHover(event, codeBlock, isIterative) {
-    console.log('🔍 Detecting line hover...');
-
+    // Get mouse position relative to code block
     const rect = codeBlock.getBoundingClientRect();
-    const lineHeight = parseInt(getComputedStyle(codeBlock).lineHeight) || 20;
-    const y = event.clientY - rect.top;
-    const lineIndex = Math.floor(y / lineHeight);
+    const relativeY = event.clientY - rect.top;
 
-    console.log(`📏 Line height: ${lineHeight}, Y position: ${y}, Calculated line: ${lineIndex}`);
+    // Estimate line height (typical monospace font)
+    const lineHeight = 20; // Fixed height for reliability
+    const lineIndex = Math.floor(relativeY / lineHeight);
 
-    // Get lines
-    const codeText = codeBlock.textContent;
-    const lines = codeText.split('\n').filter(line => line.trim() !== '');
+    // Get code lines
+    const codeText = codeBlock.textContent || codeBlock.innerText;
+    const lines = codeText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
 
-    console.log(`📄 Total lines in code: ${lines.length}`);
+    // Check if we're over a valid line
+    if (lineIndex >= 0 && lineIndex < lines.length && relativeY >= 0) {
+        const currentLine = lines[lineIndex];
 
-    if (lineIndex >= 0 && lineIndex < lines.length) {
-        console.log(`✅ Valid line ${lineIndex + 1}: "${lines[lineIndex].substring(0, 30)}..."`);
+        // Only show tooltip if mouse is actually over text (not empty space)
+        if (currentLine && currentLine.length > 0) {
+            const explanations = getAlgorithmExplanations(isIterative);
+            const explanation = explanations[lineIndex] || `Baris ${lineIndex + 1}: ${currentLine.substring(0, 30)}...`;
 
-        const explanations = getAlgorithmExplanations(isIterative);
-        const explanation = explanations[lineIndex] || `Baris ${lineIndex + 1} algoritma ${isIterative ? 'iteratif' : 'rekursif'}`;
-
-        console.log(`💬 Showing tooltip: "${explanation.substring(0, 50)}..."`);
-        showInlineTooltip(event, explanation);
+            showInlineTooltip(event, explanation);
+        }
     } else {
-        console.log('❌ Line index out of range, hiding tooltip');
         hideCodeTooltip();
     }
 }
 
 function showInlineTooltip(event, message) {
-    console.log('🎨 Creating inline tooltip...');
-
     // Remove existing tooltip
     hideCodeTooltip();
 
@@ -440,25 +430,40 @@ function showInlineTooltip(event, message) {
     const tooltip = document.createElement('div');
     tooltip.className = 'inline-tooltip';
     tooltip.textContent = message;
-    tooltip.style.position = 'fixed';
-    tooltip.style.left = (event.pageX + 15) + 'px';
-    tooltip.style.top = (event.pageY - 10) + 'px';
-    tooltip.style.background = 'red'; // Very visible for testing
-    tooltip.style.color = 'white';
-    tooltip.style.padding = '10px 15px';
-    tooltip.style.borderRadius = '6px';
-    tooltip.style.fontSize = '14px';
-    tooltip.style.fontWeight = 'bold';
-    tooltip.style.maxWidth = '400px';
-    tooltip.style.zIndex = '10000';
-    tooltip.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
-    tooltip.style.border = '2px solid yellow';
 
-    console.log(`📍 Tooltip positioned at: ${event.pageX + 15}, ${event.pageY - 10}`);
-    console.log(`💬 Tooltip message: "${message}"`);
+    // Position next to cursor
+    tooltip.style.position = 'fixed';
+    tooltip.style.left = (event.pageX + 12) + 'px';
+    tooltip.style.top = (event.pageY - 8) + 'px';
+
+    // Blue theme styling
+    tooltip.style.background = 'rgba(49, 130, 206, 0.95)';
+    tooltip.style.color = 'white';
+    tooltip.style.padding = '8px 12px';
+    tooltip.style.borderRadius = '6px';
+    tooltip.style.fontSize = '13px';
+    tooltip.style.fontWeight = '500';
+    tooltip.style.maxWidth = '350px';
+    tooltip.style.zIndex = '10000';
+    tooltip.style.boxShadow = '0 3px 10px rgba(49, 130, 206, 0.3)';
+    tooltip.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+    tooltip.style.pointerEvents = 'none';
+
+    // Smart positioning - adjust if off-screen
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    // If tooltip would go off right edge, show on left
+    if (event.pageX + 12 + 350 > windowWidth) {
+        tooltip.style.left = (event.pageX - 362) + 'px';
+    }
+
+    // If tooltip would go off bottom, show above
+    if (event.pageY - 8 + 60 > windowHeight) {
+        tooltip.style.top = (event.pageY - 68) + 'px';
+    }
 
     document.body.appendChild(tooltip);
-    console.log('✅ Tooltip added to DOM');
 }
 
 // Old function - replaced by showSimpleTooltip
