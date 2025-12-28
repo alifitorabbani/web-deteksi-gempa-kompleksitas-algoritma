@@ -356,41 +356,22 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function setupAlgorithmTooltips() {
-    alert('🎯 SETUP: Starting algorithm tooltips setup...');
-
     // Find code blocks
     const codeBlocks = document.querySelectorAll('.algorithm-code pre code');
-    alert('📝 FOUND: ' + codeBlocks.length + ' algorithm code blocks');
-
-    if (codeBlocks.length === 0) {
-        alert('❌ ERROR: No algorithm code blocks found!');
-        return;
-    }
 
     codeBlocks.forEach((block, index) => {
         const isIterative = index === 0;
-        alert('🔧 SETTING UP: ' + (isIterative ? 'Iterative' : 'Recursive') + ' algorithm block');
 
-        // Make block interactive
-        block.style.cursor = 'crosshair';
-        block.style.border = '2px solid #3182ce';
-        block.style.borderRadius = '8px';
-        block.style.padding = '10px';
-        block.style.background = 'rgba(49, 130, 206, 0.05)';
+        // Reset any existing styles to clean state
+        block.style.cssText = '';
 
-        // Add click listener for testing
-        block.addEventListener('click', () => {
-            alert('🎯 CLICKED: Code block is interactive!');
-        });
-
-        // Add hover listener
-        block.addEventListener('mouseenter', (e) => {
-            alert('🎯 HOVER: Mouse entered code block');
-            showSimpleTooltip(e, 'This code is interactive! Hover over lines for explanations.');
+        // Add subtle hover effect without changing layout
+        block.addEventListener('mouseenter', () => {
+            block.style.backgroundColor = 'rgba(49, 130, 206, 0.03)';
         });
 
         block.addEventListener('mouseleave', () => {
-            alert('🚫 HOVER: Mouse left code block');
+            block.style.backgroundColor = '';
             hideCodeTooltip();
         });
 
@@ -398,11 +379,7 @@ function setupAlgorithmTooltips() {
         block.addEventListener('mousemove', (event) => {
             handleSimpleLineHover(event, block, isIterative);
         });
-
-        alert('✅ SUCCESS: Set up block ' + (index + 1));
     });
-
-    alert('🎉 COMPLETE: Algorithm tooltips setup finished!');
 }
 
 function handleSimpleLineHover(event, codeBlock, isIterative) {
@@ -417,34 +394,55 @@ function handleSimpleLineHover(event, codeBlock, isIterative) {
 
     if (lineIndex >= 0 && lineIndex < lines.length) {
         const explanations = getAlgorithmExplanations(isIterative);
-        const explanation = explanations[lineIndex] || `Line ${lineIndex + 1} of ${isIterative ? 'iterative' : 'recursive'} algorithm`;
+        const explanation = explanations[lineIndex] || `Baris ${lineIndex + 1} algoritma ${isIterative ? 'iteratif' : 'rekursif'}`;
 
-        alert('📍 LINE HOVER: Line ' + (lineIndex + 1) + ' - ' + explanation.substring(0, 50) + '...');
-        showSimpleTooltip(event, explanation);
+        showInlineTooltip(event, explanation);
+    } else {
+        hideCodeTooltip();
     }
 }
 
-function showSimpleTooltip(event, message) {
-    // Remove existing
+function showInlineTooltip(event, message) {
+    // Remove existing tooltip
     hideCodeTooltip();
 
-    // Create simple tooltip
+    // Create tooltip that appears right next to cursor
     const tooltip = document.createElement('div');
-    tooltip.className = 'code-tooltip';
+    tooltip.className = 'inline-tooltip';
     tooltip.textContent = message;
+
+    // Position exactly next to cursor
     tooltip.style.position = 'fixed';
-    tooltip.style.left = (event.pageX + 10) + 'px';
-    tooltip.style.top = (event.pageY + 10) + 'px';
-    tooltip.style.background = 'black';
+    tooltip.style.left = (event.pageX + 15) + 'px'; // 15px to the right of cursor
+    tooltip.style.top = (event.pageY - 10) + 'px';  // 10px above cursor center
+    tooltip.style.background = 'rgba(0, 0, 0, 0.9)';
     tooltip.style.color = 'white';
-    tooltip.style.padding = '5px 10px';
+    tooltip.style.padding = '6px 10px';
     tooltip.style.borderRadius = '4px';
-    tooltip.style.fontSize = '12px';
-    tooltip.style.maxWidth = '300px';
+    tooltip.style.fontSize = '13px';
+    tooltip.style.fontFamily = 'Arial, sans-serif';
+    tooltip.style.maxWidth = '350px';
     tooltip.style.zIndex = '10000';
+    tooltip.style.pointerEvents = 'none';
+    tooltip.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+    tooltip.style.border = '1px solid rgba(255,255,255,0.1)';
+
+    // Adjust position if tooltip would go off-screen
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    // Check if tooltip goes off right edge
+    if (event.pageX + 15 + 350 > windowWidth) {
+        tooltip.style.left = (event.pageX - 365) + 'px'; // Show on left side
+    }
+
+    // Check if tooltip goes off bottom edge
+    if (event.pageY - 10 + 60 > windowHeight) {
+        tooltip.style.top = (event.pageY - 70) + 'px'; // Show above cursor
+    }
 
     document.body.appendChild(tooltip);
-    alert('💬 TOOLTIP: Created tooltip with message');
 }
 
 // Old function - replaced by showSimpleTooltip
@@ -513,10 +511,6 @@ function showCodeTooltip(event) {
 
 function hideCodeTooltip() {
     // Remove existing tooltips
-    const existingTooltips = document.querySelectorAll('.code-tooltip');
+    const existingTooltips = document.querySelectorAll('.code-tooltip, .inline-tooltip');
     existingTooltips.forEach(tooltip => tooltip.remove());
-
-    // Remove highlight from all lines
-    const highlightedLines = document.querySelectorAll('.code-line-highlighted');
-    highlightedLines.forEach(line => line.classList.remove('code-line-highlighted'));
 }
