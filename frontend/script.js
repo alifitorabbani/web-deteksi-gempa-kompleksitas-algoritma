@@ -447,46 +447,7 @@ function showSimpleTooltip(event, message) {
     alert('💬 TOOLTIP: Created tooltip with message');
 }
 
-function showCodeTooltipForLine(event, tooltipData) {
-    // Remove existing tooltip
-    hideCodeTooltip();
-
-    // Create tooltip element
-    const tooltip = document.createElement('div');
-    tooltip.className = 'code-tooltip';
-    tooltip.innerHTML = `
-        <div class="tooltip-content">${tooltipData.explanation}</div>
-    `;
-
-    // Position tooltip very close to cursor (inline style)
-    let left = event.pageX + 8; // Very close to cursor
-    let top = event.pageY + 8;  // Slightly below cursor
-
-    // Adjust if tooltip would go off-screen
-    const tooltipWidth = 350; // smaller width for inline feel
-    const tooltipHeight = 60;  // smaller height
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-
-    if (left + tooltipWidth > windowWidth) {
-        left = event.pageX - tooltipWidth - 8; // Show on left side
-    }
-
-    if (top + tooltipHeight > windowHeight) {
-        top = event.pageY - tooltipHeight - 8; // Show above cursor
-    }
-
-    tooltip.style.left = left + 'px';
-    tooltip.style.top = top + 'px';
-    tooltip.style.maxWidth = tooltipWidth + 'px';
-
-    // Add to DOM
-    document.body.appendChild(tooltip);
-
-    // Trigger reflow for animation
-    tooltip.offsetHeight;
-    tooltip.classList.add('visible');
-}
+// Old function - replaced by showSimpleTooltip
 
 function getAlgorithmExplanations(isIterative) {
     if (isIterative) {
