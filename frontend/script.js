@@ -456,30 +456,30 @@ function showCodeTooltipForLine(event, tooltipData) {
     const tooltip = document.createElement('div');
     tooltip.className = 'code-tooltip';
     tooltip.innerHTML = `
-        <div class="tooltip-header">📍 Baris ${tooltipData.lineNumber} - ${tooltipData.algorithm}</div>
         <div class="tooltip-content">${tooltipData.explanation}</div>
     `;
 
-    // Position tooltip near mouse cursor with smart positioning
-    let left = event.pageX + 15;
-    let top = event.pageY - 10;
+    // Position tooltip very close to cursor (inline style)
+    let left = event.pageX + 8; // Very close to cursor
+    let top = event.pageY + 8;  // Slightly below cursor
 
     // Adjust if tooltip would go off-screen
-    const tooltipWidth = 400; // approximate width
-    const tooltipHeight = 100; // approximate height
+    const tooltipWidth = 350; // smaller width for inline feel
+    const tooltipHeight = 60;  // smaller height
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
     if (left + tooltipWidth > windowWidth) {
-        left = event.pageX - tooltipWidth - 15;
+        left = event.pageX - tooltipWidth - 8; // Show on left side
     }
 
     if (top + tooltipHeight > windowHeight) {
-        top = event.pageY - tooltipHeight - 15;
+        top = event.pageY - tooltipHeight - 8; // Show above cursor
     }
 
     tooltip.style.left = left + 'px';
     tooltip.style.top = top + 'px';
+    tooltip.style.maxWidth = tooltipWidth + 'px';
 
     // Add to DOM
     document.body.appendChild(tooltip);
@@ -487,8 +487,6 @@ function showCodeTooltipForLine(event, tooltipData) {
     // Trigger reflow for animation
     tooltip.offsetHeight;
     tooltip.classList.add('visible');
-
-    console.log(`💬 Showing tooltip for line ${tooltipData.lineNumber}`);
 }
 
 function getAlgorithmExplanations(isIterative) {
