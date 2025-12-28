@@ -339,6 +339,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize interactive algorithm code explanations after data is loaded
     // This will be called in loadEarthquakeData after results are displayed
 
+    // Also initialize immediately for testing (will be overridden after data loads)
+    setTimeout(() => {
+        initializeAlgorithmTooltips();
+    }, 1000);
+
 });
 
 function initializeAlgorithmTooltips() {
@@ -347,6 +352,18 @@ function initializeAlgorithmTooltips() {
     // Add hover listeners to existing code blocks using event delegation
     const algorithmCodes = document.querySelectorAll('.algorithm-code pre code');
     console.log('📝 Found algorithm code blocks:', algorithmCodes.length);
+
+    if (algorithmCodes.length === 0) {
+        console.log('❌ No algorithm code blocks found! Checking selectors...');
+        // Debug: check if elements exist with different selectors
+        const preElements = document.querySelectorAll('pre');
+        const codeElements = document.querySelectorAll('code');
+        const algorithmDivs = document.querySelectorAll('.algorithm-code');
+        console.log('Pre elements:', preElements.length);
+        console.log('Code elements:', codeElements.length);
+        console.log('Algorithm divs:', algorithmDivs.length);
+        return;
+    }
 
     algorithmCodes.forEach((codeBlock, algorithmIndex) => {
         const isIterative = algorithmIndex === 0;
@@ -368,9 +385,12 @@ function initializeAlgorithmTooltips() {
         codeBlock.style.border = '2px solid rgba(49, 130, 206, 0.3)';
         codeBlock.style.borderRadius = '6px';
         codeBlock.style.transition = 'border-color 0.3s ease';
+        codeBlock.style.padding = '10px';
+        codeBlock.style.background = 'rgba(49, 130, 206, 0.05)';
     });
 
     console.log('✅ Algorithm tooltips initialized successfully');
+    alert('🎉 Algorithm tooltips initialized! Hover over code lines to see explanations.');
 }
 
 function handleCodeHover(event, codeBlock, explanations, isIterative) {
