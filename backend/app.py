@@ -198,8 +198,6 @@ def fetch_earthquake_data(target_count):
 
     # Ensure all features meet criteria
     final_features = [f for f in all_features if f['properties']['mag'] and f['properties']['mag'] >= min_magnitude]
-    if continent_filter != 'all':
-        final_features = [f for f in final_features if get_continent(f) == continent_filter]
 
     final_features = final_features[:target_count]
 
@@ -209,8 +207,6 @@ def fetch_earthquake_data(target_count):
     }
 
     print(f"FINAL: {len(result_data['features'])} REAL earthquake records (M >= {min_magnitude}) collected from USGS")
-    if continent_filter != 'all':
-        print(f"       Continent: {continent_filter}")
     return result_data
 
 @app.route('/')
@@ -220,74 +216,6 @@ def index():
 @app.route('/analysis')
 def analysis():
     return app.send_static_file('index.html')
-
-@app.route('/cache-stats')
-def get_cache_stats():
-    """Get cache performance statistics"""
-    total_requests = cache_stats['total_loads']
-    hit_rate = (cache_stats['hits'] / total_requests * 100) if total_requests > 0 else 0
-
-    # Get cache file info
-    cache_files = []
-    try:
-        for filename in os.listdir(CACHE_DIR):
-            if filename.endswith('.json.gz'):
-                filepath = os.path.join(CACHE_DIR, filename)
-                size = os.path.getsize(filepath)
-                cache_files.append({
-                    'name': filename,
-                    'size_mb': round(size / (1024 * 1024), 2),
-                    'size_kb': round(size / 1024, 1)
-                })
-    except:
-        pass
-
-    return jsonify({
-        'cache_stats': {
-            'total_requests': total_requests,
-            'cache_hits': cache_stats['hits'],
-            'cache_misses': cache_stats['misses'],
-            'hit_rate_percent': round(hit_rate, 1),
-            'compression_ratio_percent': round(cache_stats['compression_ratio'], 1),
-            'cache_duration_hours': CACHE_DURATION / 3600
-        },
-        'cache_files': cache_files,
-        'cache_directory': CACHE_DIR
-    })
-
-@app.route('/update-cache', methods=['POST'])
-def update_cache():
-    """API endpoint to manually trigger cache update for specific size"""
-    size = int(request.args.get('size', 5000))
-    continent = request.args.get('continent', 'all')
-
-    if size not in [5000, 10000, 20000]:
-        return jsonify({'error': 'Invalid size. Supported sizes: 5000, 10000, 20000'}), 400
-
-    try:
-        print(f"API-triggered cache update starting for {size} records (continent: {continent})...")
-        start_time = time.time()
-        data = fetch_earthquake_data(size)
-        update_time = time.time() - start_time
-
-        if data and len(data['features']) > 0:
-            cache_key = get_cache_key(size)
-            with cache_lock:
-                save_to_cache(cache_key, data)
-            print(f"API cache updated with {len(data['features'])} records in {update_time:.1f}s")
-            return jsonify({
-                'success': True,
-                'message': f'Cache updated for {size} records',
-                'records_count': len(data['features']),
-                'update_time_seconds': round(update_time, 2),
-                'continent': continent
-            })
-        else:
-            return jsonify({'error': 'Failed to fetch data'}), 500
-
-    except Exception as e:
-        print(f"API cache update error: {e}")
-        return jsonify({'error': str(e)}), 500
 
 @app.route('/earthquakes', methods=['GET'])
 def get_earthquakes():
@@ -531,28 +459,6 @@ def add_security_headers(response):
 
     return response
 
-def get_continent(feature):
-    # Sederhana: berdasarkan koordinat
-    lat = feature['geometry']['coordinates'][1]
-    lon = feature['geometry']['coordinates'][0]
-
-    if -20 <= lat <= 20:
-        if -20 <= lon <= 55:
-            return 'Africa'
-        elif 55 <= lon <= 180:
-            return 'Asia'
-    elif lat > 20:
-        if -130 <= lon <= -60:
-            return 'North America'
-        elif -60 <= lon <= 0:
-            return 'South America'
-        elif 0 <= lon <= 180:
-            return 'Asia'
-    else:  # lat < -20
-        if -180 <= lon <= 180:
-            return 'Australia'
-
-    return 'Other'
 
 
 def background_cache_updater(target_size, update_interval=300):
