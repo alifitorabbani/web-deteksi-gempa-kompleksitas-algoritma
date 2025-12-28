@@ -64,14 +64,14 @@ def load_from_cache(cache_key):
     return None
 
 def save_to_cache(cache_key, data):
-    """Save data to cache file"""
+    """Save data to cache file (compressed)"""
     try:
-        cache_file = os.path.join(CACHE_DIR, f"{cache_key}.json")
+        cache_file = os.path.join(CACHE_DIR, f"{cache_key}.json.gz")
         cache_data = {
             'timestamp': time.time(),
             'data': data
         }
-        with open(cache_file, 'w') as f:
+        with gzip.open(cache_file, 'wt') as f:
             json.dump(cache_data, f)
         print(f"Data cached for {cache_key}")
     except Exception as e:
@@ -82,10 +82,10 @@ def cleanup_old_cache():
     try:
         current_time = time.time()
         for filename in os.listdir(CACHE_DIR):
-            if filename.endswith('.json'):
+            if filename.endswith('.json.gz'):
                 filepath = os.path.join(CACHE_DIR, filename)
                 try:
-                    with open(filepath, 'r') as f:
+                    with gzip.open(filepath, 'rt') as f:
                         cached_data = json.load(f)
                         if current_time - cached_data.get('timestamp', 0) > CACHE_DURATION * 2:  # 2 hours
                             os.remove(filepath)
