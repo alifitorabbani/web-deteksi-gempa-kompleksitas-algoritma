@@ -261,6 +261,40 @@ def get_cache_stats():
         'cache_directory': CACHE_DIR
     })
 
+@app.route('/update-cache', methods=['POST'])
+def update_cache():
+    """API endpoint to manually trigger cache update for specific size"""
+    size = int(request.args.get('size', 5000))
+    continent = request.args.get('continent', 'all')
+
+    if size not in [5000, 10000, 20000]:
+        return jsonify({'error': 'Invalid size. Supported sizes: 5000, 10000, 20000'}), 400
+
+    try:
+        print(f"API-triggered cache update starting for {size} records (continent: {continent})...")
+        start_time = time.time()
+        data = fetch_earthquake_data(size, continent)
+        update_time = time.time() - start_time
+
+        if data and len(data['features']) > 0:
+            cache_key = get_cache_key(continent, size)
+            with cache_lock:
+                save_to_cache(cache_key, data)
+            print(f"API cache updated with {len(data['features'])} records in {update_time:.1f}s")
+            return jsonify({
+                'success': True,
+                'message': f'Cache updated for {size} records',
+                'records_count': len(data['features']),
+                'update_time_seconds': round(update_time, 2),
+                'continent': continent
+            })
+        else:
+            return jsonify({'error': 'Failed to fetch data'}), 500
+
+    except Exception as e:
+        print(f"API cache update error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/earthquakes', methods=['GET'])
 def get_earthquakes():
     size = int(request.args.get('size', 10))
