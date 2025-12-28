@@ -22,11 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     loadBtn.addEventListener('click', loadEarthquakeData);
 
-    // Initialize algorithm tooltips immediately for testing
-    console.log('🎯 Setting up algorithm tooltips...');
-    setTimeout(() => {
-        setupAlgorithmTooltips();
-    }, 500);
+    // Algorithm tooltips removed as per user request
 
     async function loadEarthquakeData() {
         // Show loading, hide table and error
