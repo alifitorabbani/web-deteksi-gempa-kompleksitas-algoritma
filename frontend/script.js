@@ -494,9 +494,17 @@ function showDetailedCommentModal(event, commentObj) {
     // Remove existing modals
     hideCodeTooltip();
 
-    // Apply blur to background
-    document.body.style.filter = 'blur(2px)';
-    document.body.style.pointerEvents = 'none';
+    // Create backdrop with blur
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.style.position = 'fixed';
+    backdrop.style.top = '0';
+    backdrop.style.left = '0';
+    backdrop.style.width = '100%';
+    backdrop.style.height = '100%';
+    backdrop.style.background = 'transparent';
+    backdrop.style.backdropFilter = 'blur(2px)';
+    backdrop.style.zIndex = '10000';
 
     // Create modal overlay
     const modal = document.createElement('div');
@@ -506,11 +514,11 @@ function showDetailedCommentModal(event, commentObj) {
     modal.style.left = '0';
     modal.style.width = '100%';
     modal.style.height = '100%';
-    modal.style.background = 'transparent';
     modal.style.zIndex = '10001';
     modal.style.display = 'flex';
     modal.style.alignItems = 'center';
     modal.style.justifyContent = 'center';
+    modal.style.pointerEvents = 'none'; // Allow clicks to pass through to backdrop
 
     // Create modal content
     const content = document.createElement('div');
@@ -522,6 +530,7 @@ function showDetailedCommentModal(event, commentObj) {
     content.style.overflow = 'auto';
     content.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
     content.style.position = 'relative';
+    content.style.pointerEvents = 'auto'; // Enable interaction with content
 
     // Close button
     const closeBtn = document.createElement('button');
