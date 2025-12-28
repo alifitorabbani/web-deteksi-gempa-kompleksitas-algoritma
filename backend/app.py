@@ -31,15 +31,21 @@ limiter = Limiter(
 
 # High-performance real-time data with optimized cache
 CACHE_DIR = "cache"
-CACHE_DURATION = 3600  # 1 hour cache for better performance
-DATA_VERSION = "v9"  # Force cache invalidation for latest data
+CACHE_DURATION = 7200  # 2 hours cache for better performance (increased from 1 hour)
+DATA_VERSION = "v10"  # Force cache invalidation for latest optimizations
 
 # Ensure cache directory exists
 if not os.path.exists(CACHE_DIR):
     os.makedirs(CACHE_DIR)
 
-# Global cache dictionary
+# Global cache dictionary and statistics
 earthquake_cache = {}
+cache_stats = {
+    'hits': 0,
+    'misses': 0,
+    'total_loads': 0,
+    'compression_ratio': 0.0
+}
 cache_lock = threading.Lock()
 
 def get_cache_key(continent, size):
