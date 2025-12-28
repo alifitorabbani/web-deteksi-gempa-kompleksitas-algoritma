@@ -189,6 +189,83 @@
                     </div>
                 </div>
 
+                <div class="algorithm-card">
+                    <h3>Algoritma Rekursif</h3>
+                    <div class="algorithm-code">
+                        <h4>Kode Algoritma:</h4>
+                        <pre><code>def analyze_earthquakes_recursive(features, index=0, total_gempa=0, sum_magnitudo=0.0, jumlah_berbahaya=0, sum_squares=0.0, min_mag=float('inf'), max_mag=float('-inf')):
+    if index >= len(features):  # Base case - O(1)
+        rata_rata_magnitudo = sum_magnitudo / total_gempa if total_gempa > 0 else 0.0
+        variansi = (sum_squares / total_gempa - rata_rata_magnitudo ** 2) if total_gempa > 1 else 0.0
+        std_dev = variansi ** 0.5 if variansi > 0 else 0.0
+        persentase_berbahaya = (jumlah_berbahaya / total_gempa * 100) if total_gempa > 0 else 0.0
+        return {
+            'total_gempa': total_gempa,
+            'rata_rata_magnitudo': round(rata_rata_magnitudo, 3),
+            'min_magnitudo': round(min_mag, 1) if min_mag != float('inf') else 0.0,
+            'max_magnitudo': round(max_mag, 1) if max_mag != float('-inf') else 0.0,
+            'standar_deviasi': round(std_dev, 3),
+            'jumlah_berbahaya': jumlah_berbahaya,
+            'persentase_berbahaya': round(persentase_berbahaya, 2),
+            'waktu_eksekusi': 0  # akan diukur di luar
+        }
+
+    magnitudo = features[index]['properties']['mag']
+    new_total_gempa = total_gempa + 1
+    new_sum_magnitudo = sum_magnitudo + magnitudo
+    new_sum_squares = sum_squares + magnitudo ** 2
+    new_min_mag = min(min_mag, magnitudo)
+    new_max_mag = max(max_mag, magnitudo)
+    new_jumlah_berbahaya = jumlah_berbahaya + (1 if magnitudo >= 5.0 else 0)
+
+    return analyze_earthquakes_recursive(
+        features, index + 1, new_total_gempa, new_sum_magnitudo,
+        new_jumlah_berbahaya, new_sum_squares, new_min_mag, new_max_mag
+    )  # Recursive call - O(n) calls</code></pre>
+                    </div>
+                    <div id="recursive-results">
+                        <div class="results-summary">
+                            <p>Total Gempa: <span id="recursive-total"></span></p>
+                            <p>Rata-rata Magnitudo: <span id="recursive-rata-rata"></span></p>
+                            <p>Min Magnitudo: <span id="recursive-min"></span></p>
+                            <p>Max Magnitudo: <span id="recursive-max"></span></p>
+                            <p>Standar Deviasi: <span id="recursive-std"></span></p>
+                            <p>Jumlah Gempa Berbahaya (≥5.0): <span id="recursive-berbahaya" class="danger-count"></span></p>
+                            <p>Waktu Eksekusi: <span id="recursive-waktu"></span> detik</p>
+                        </div>
+                    </div>
+                    <div id="recursive-error" style="display: none; color: red; padding: 10px;">
+                        <p><strong>Error:</strong> <span id="recursive-error-msg"></span></p>
+                    </div>
+                    <div class="complexity-info">
+                        <h4>Analisis Kompleksitas</h4>
+                        <p><strong>Kasus Terbaik:</strong> <span id="recursive-best"></span></p>
+                        <p><strong>Kasus Terburuk:</strong> <span id="recursive-worst"></span></p>
+                        <p><strong>Kasus Rata-rata:</strong> <span id="recursive-average"></span></p>
+                        <p><strong>Kompleksitas Ruang:</strong> <span id="recursive-space"></span></p>
+                        <p><strong>Kesesuaian:</strong> <span id="recursive-suitability"></span></p>
+                    </div>
+                    <div class="algorithm-conclusion">
+                        <h4>Kesimpulan Algoritma Rekursif</h4>
+                        <div class="conclusion-content">
+                            <p><strong>✅ Kelebihan:</strong></p>
+                            <ul>
+                                <li>Representasi deklaratif yang elegan memfasilitasi pemahaman algoritma secara matematis.</li>
+                                <li>Kesesuaian intrinsik untuk masalah yang bersifat rekursif secara alami, seperti struktur pohon atau pemrosesan hierarkis.</li>
+                                <li>Kode yang lebih ringkas dan ekspresif, mengurangi kompleksitas implementasi untuk kasus tertentu.</li>
+                            </ul>
+                            <p><strong>❌ Kekurangan:</strong></p>
+                            <ul>
+                                <li>Kompleksitas ruang O(n) akibat akumulasi call stack, menyebabkan inefisiensi memori pada dataset besar.</li>
+                                <li>Risiko stack overflow pada input >1200 elemen, membatasi skalabilitas praktis (dari maksimal 3000 recursion limit sistem).</li>
+                                <li>Tidak sesuai untuk pemrosesan data seismik skala global dengan kompleksitas waktu O(n) namun overhead stack yang signifikan.</li>
+                                <li>Implementasi yang lebih kompleks dalam hal debugging dan optimasi performa.</li>
+                                <li>Degradasi performa temporal yang eksponensial pada dataset besar akibat manajemen stack.</li>
+                            </ul>
+                            <p><strong>📊 Rekomendasi:</strong> Berdasarkan evaluasi kompleksitas algoritma, pendekatan rekursif hanya cocok untuk dataset kecil hingga 1200 elemen. Untuk analisis data gempa real-time skala besar, gunakan algoritma iteratif yang lebih stabil dan efisien.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

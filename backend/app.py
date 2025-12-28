@@ -48,9 +48,9 @@ cache_stats = {
 }
 cache_lock = threading.Lock()
 
-def get_cache_key(size):
-    """Generate unique cache key for size"""
-    return f"all_{size}_{DATA_VERSION}"
+def get_cache_key(continent, size):
+    """Generate unique cache key for continent and size"""
+    return f"{continent}_{size}_{DATA_VERSION}"
 
 def load_from_cache(cache_key):
     """Load data from cache file with performance tracking"""
@@ -121,8 +121,10 @@ def cleanup_old_cache():
     except Exception as e:
         print(f"Cache cleanup error: {e}")
 
-def fetch_earthquake_data(target_count):
+def fetch_earthquake_data(target_count, continent_filter='all'):
     print(f"=== Fetching {target_count} REAL earthquake records (M >= 2.5) from USGS ===")
+    if continent_filter != 'all':
+        print(f"   Continent filter: {continent_filter}")
 
     all_features = []
     batch_size = 2000  # Smaller batch size for better reliability
@@ -168,6 +170,10 @@ def fetch_earthquake_data(target_count):
                 # Filter to ensure all have magnitude >= min_magnitude
                 valid_features = [f for f in batch_features if f['properties']['mag'] and f['properties']['mag'] >= min_magnitude]
 
+                # Apply continent filter if specified
+                if continent_filter != 'all':
+                    valid_features = [f for f in valid_features if get_continent(f) == continent_filter]
+
                 # Filter out duplicates
                 existing_ids = {f['id'] for f in all_features}
                 new_features = [f for f in valid_features if f['id'] not in existing_ids]
@@ -198,6 +204,8 @@ def fetch_earthquake_data(target_count):
 
     # Ensure all features meet criteria
     final_features = [f for f in all_features if f['properties']['mag'] and f['properties']['mag'] >= min_magnitude]
+    if continent_filter != 'all':
+        final_features = [f for f in final_features if get_continent(f) == continent_filter]
 
     final_features = final_features[:target_count]
 
@@ -207,6 +215,8 @@ def fetch_earthquake_data(target_count):
     }
 
     print(f"FINAL: {len(result_data['features'])} REAL earthquake records (M >= {min_magnitude}) collected from USGS")
+    if continent_filter != 'all':
+        print(f"       Continent: {continent_filter}")
     return result_data
 
 @app.route('/')
@@ -255,18 +265,19 @@ def get_cache_stats():
 def update_cache():
     """API endpoint to manually trigger cache update for specific size"""
     size = int(request.args.get('size', 5000))
+    continent = request.args.get('continent', 'all')
 
     if size not in [5000, 10000, 20000]:
         return jsonify({'error': 'Invalid size. Supported sizes: 5000, 10000, 20000'}), 400
 
     try:
-        print(f"API-triggered cache update starting for {size} records...")
+        print(f"API-triggered cache update starting for {size} records (continent: {continent})...")
         start_time = time.time()
-        data = fetch_earthquake_data(size)
+        data = fetch_earthquake_data(size, continent)
         update_time = time.time() - start_time
 
         if data and len(data['features']) > 0:
-            cache_key = get_cache_key(size)
+            cache_key = get_cache_key(continent, size)
             with cache_lock:
                 save_to_cache(cache_key, data)
             print(f"API cache updated with {len(data['features'])} records in {update_time:.1f}s")
@@ -274,7 +285,8 @@ def update_cache():
                 'success': True,
                 'message': f'Cache updated for {size} records',
                 'records_count': len(data['features']),
-                'update_time_seconds': round(update_time, 2)
+                'update_time_seconds': round(update_time, 2),
+                'continent': continent
             })
         else:
             return jsonify({'error': 'Failed to fetch data'}), 500
@@ -289,7 +301,7 @@ def get_earthquakes():
     sort_by = request.args.get('sort', 'time')
 
     # Use cache key based on requested size for better cache utilization
-    cache_key = get_cache_key(size)
+    cache_key = get_cache_key('all', size)
     data = load_from_cache(cache_key)
 
     if data and len(data['features']) >= size:
@@ -318,14 +330,14 @@ def get_earthquakes():
                 else:
                     # Fall back to comprehensive fetch
                     print(f"Live feed only has {real_time_count} records, need {size}. Using comprehensive fetch...")
-                    data = fetch_earthquake_data(size)
+                    data = fetch_earthquake_data(size, 'all')
 
             except Exception as e:
                 print(f"Live feed error: {e}, using comprehensive fetch...")
-                data = fetch_earthquake_data(size)
+                data = fetch_earthquake_data(size, 'all')
         else:
             # For larger sizes, try to slice from cached 20000 records first
-            large_cache_key = get_cache_key(20000)
+            large_cache_key = get_cache_key('all', 20000)
             large_data = load_from_cache(large_cache_key)
             if large_data and len(large_data['features']) >= size:
                 data = {
@@ -335,7 +347,7 @@ def get_earthquakes():
                 print(f"Sliced {size} records from cached 20000 records")
             else:
                 # Fall back to comprehensive fetch
-                data = fetch_earthquake_data(size)
+                data = fetch_earthquake_data(size, 'all')
 
         # Cache the result
         if data and len(data['features']) >= size:
@@ -411,12 +423,52 @@ def get_earthquakes():
             'waktu_eksekusi': round(execution_time, 6)
         }
 
+    # Fungsi rekursif - O(n) time, O(n) space (call stack)
+    def analyze_earthquakes_recursive(features, index=0, total_gempa=0, sum_magnitudo=0.0, jumlah_berbahaya=0, sum_squares=0.0, min_mag=float('inf'), max_mag=float('-inf')):
+        if index >= len(features):
+            rata_rata_magnitudo = sum_magnitudo / total_gempa if total_gempa > 0 else 0.0
+            variansi = (sum_squares / total_gempa - rata_rata_magnitudo ** 2) if total_gempa > 1 else 0.0
+            std_dev = variansi ** 0.5 if variansi > 0 else 0.0
+            persentase_berbahaya = (jumlah_berbahaya / total_gempa * 100) if total_gempa > 0 else 0.0
+            return {
+                'total_gempa': total_gempa,
+                'rata_rata_magnitudo': round(rata_rata_magnitudo, 3),
+                'min_magnitudo': round(min_mag, 1) if min_mag != float('inf') else 0.0,
+                'max_magnitudo': round(max_mag, 1) if max_mag != float('-inf') else 0.0,
+                'standar_deviasi': round(std_dev, 3),
+                'jumlah_berbahaya': jumlah_berbahaya,
+                'persentase_berbahaya': round(persentase_berbahaya, 2),
+                'waktu_eksekusi': 0  # akan diukur di luar
+            }
+
+        magnitudo = features[index]['properties']['mag']
+        new_total_gempa = total_gempa + 1
+        new_sum_magnitudo = sum_magnitudo + magnitudo
+        new_sum_squares = sum_squares + magnitudo ** 2
+        new_min_mag = min(min_mag, magnitudo)
+        new_max_mag = max(max_mag, magnitudo)
+        new_jumlah_berbahaya = jumlah_berbahaya + (1 if magnitudo >= 5.0 else 0)
+
+        return analyze_earthquakes_recursive(features, index + 1, new_total_gempa, new_sum_magnitudo, new_jumlah_berbahaya, new_sum_squares, new_min_mag, new_max_mag)
 
     # Jalankan analisis iteratif
     start_time_iterative = time.time()
     iterative_result = analyze_earthquakes_iterative(features)
     iterative_result['waktu_eksekusi'] = round(time.time() - start_time_iterative, 6)
 
+    # Jalankan analisis rekursif (dengan batas untuk menghindari stack overflow)
+    recursive_result = None
+    recursive_error = None
+    if len(features) <= 1200:  # Batasi untuk rekursif - push to maximum limit for true stack overflow demonstration
+        try:
+            start_time_recursive = time.time()
+            recursive_result = analyze_earthquakes_recursive(features)
+            recursive_result['waktu_eksekusi'] = round(time.time() - start_time_recursive, 6)
+        except RecursionError:
+            recursive_error = "Stack overflow - terlalu banyak data untuk algoritma rekursif"
+    else:
+        recursive_error = "Stack overflow - terlalu banyak data untuk algoritma rekursif"
+        # Don't set recursive_result for large datasets to show error in frontend
 
     # Analisis kompleksitas
     n = len(features)
@@ -455,23 +507,8 @@ def get_earthquakes():
 
     analysis_data = {
         'iterative': iterative_result,
-        'recursive': {'error': 'Recursive algorithm removed for performance optimization'},
-        'complexity_analysis': {
-            'iterative': {
-                'best_case': f'O(n) - {len(features)} iterasi loop, setiap elemen diproses dalam waktu konstan O(1)',
-                'worst_case': f'O(n) - {len(features)} iterasi loop, kompleksitas tetap linier meskipun data tidak terurut',
-                'average_case': f'O(n) - {len(features)} iterasi loop, rata-rata O(1) per elemen untuk operasi aritmatika',
-                'space_complexity': 'O(1) - menggunakan variabel tetap (total_gempa, sum_magnitudo, dll) tanpa struktur data tambahan',
-                'suitability': 'Optimal untuk dataset seismik skala global (n=20,000+), performa stabil dan efisien memori'
-            },
-            'recursive': {
-                'best_case': 'Removed',
-                'worst_case': 'Removed',
-                'average_case': 'Removed',
-                'space_complexity': 'Removed',
-                'suitability': 'Removed - replaced with iterative approach for better performance'
-            }
-        }
+        'recursive': recursive_result if recursive_result else {'error': recursive_error},
+        'complexity_analysis': complexity_analysis
     }
 
     # Cache the computed analysis
@@ -500,13 +537,35 @@ def add_security_headers(response):
 
     return response
 
+def get_continent(feature):
+    # Sederhana: berdasarkan koordinat
+    lat = feature['geometry']['coordinates'][1]
+    lon = feature['geometry']['coordinates'][0]
+
+    if -20 <= lat <= 20:
+        if -20 <= lon <= 55:
+            return 'Africa'
+        elif 55 <= lon <= 180:
+            return 'Asia'
+    elif lat > 20:
+        if -130 <= lon <= -60:
+            return 'North America'
+        elif -60 <= lon <= 0:
+            return 'South America'
+        elif 0 <= lon <= 180:
+            return 'Asia'
+    else:  # lat < -20
+        if -180 <= lon <= 180:
+            return 'Australia'
+
+    return 'Other'
 
 
 def background_cache_updater(target_size, update_interval=300):
     """Intelligent background cache updater with performance monitoring for specific size"""
     while True:
         try:
-            cache_key = get_cache_key(target_size)
+            cache_key = get_cache_key('all', target_size)
             cache_file = os.path.join(CACHE_DIR, f"{cache_key}.json.gz")
 
             # Check if cache needs updating (only if older than update_interval/2 or doesn't exist)
@@ -527,7 +586,7 @@ def background_cache_updater(target_size, update_interval=300):
             if needs_update:
                 print(f"Background cache update starting for {target_size} records...")
                 start_time = time.time()
-                data = fetch_earthquake_data(target_size)
+                data = fetch_earthquake_data(target_size, 'all')
                 update_time = time.time() - start_time
 
                 if data:

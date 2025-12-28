@@ -22,6 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     loadBtn.addEventListener('click', loadEarthquakeData);
 
+    // Algorithm tooltips removed as per user request
+
     async function loadEarthquakeData() {
         // Show loading, hide table and error
         loading.style.display = 'block';
