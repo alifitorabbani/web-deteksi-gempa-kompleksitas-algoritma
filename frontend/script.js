@@ -214,9 +214,6 @@ document.addEventListener('DOMContentLoaded', function() {
             results.style.display = 'block';
             tableContainer.style.display = 'block';
 
-            // Initialize interactive algorithm code explanations after data is loaded
-            setupAlgorithmTooltips();
-
             // Initialize chart display after results are displayed
             setTimeout(() => {
                 plotCurrentSizeChart(iterative.waktu_eksekusi, recursiveTime, size);
