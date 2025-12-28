@@ -490,6 +490,117 @@ function showInlineTooltip(event, message) {
     });
 }
 
+function showDetailedCommentModal(event, commentObj) {
+    // Remove existing modals
+    hideCodeTooltip();
+
+    // Apply blur to background
+    document.body.style.filter = 'blur(2px)';
+    document.body.style.pointerEvents = 'none';
+
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.className = 'comment-modal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.background = 'transparent';
+    modal.style.zIndex = '10001';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+
+    // Create modal content
+    const content = document.createElement('div');
+    content.style.background = 'white';
+    content.style.padding = '20px';
+    content.style.borderRadius = '8px';
+    content.style.maxWidth = '600px';
+    content.style.maxHeight = '80vh';
+    content.style.overflow = 'auto';
+    content.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+    content.style.position = 'relative';
+
+    // Close button
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '×';
+    closeBtn.style.position = 'absolute';
+    closeBtn.style.top = '10px';
+    closeBtn.style.right = '10px';
+    closeBtn.style.background = 'none';
+    closeBtn.style.border = 'none';
+    closeBtn.style.fontSize = '24px';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.color = '#666';
+    closeBtn.onclick = () => {
+        modal.remove();
+        document.body.style.filter = '';
+        document.body.style.pointerEvents = '';
+    };
+
+    // Title
+    const title = document.createElement('h3');
+    title.textContent = 'Penjelasan Kode';
+    title.style.marginTop = '0';
+    title.style.color = '#2c3e50';
+
+    // Explanation
+    const expTitle = document.createElement('h4');
+    expTitle.textContent = 'Penjelasan:';
+    expTitle.style.color = '#34495e';
+    expTitle.style.marginBottom = '5px';
+    const expText = document.createElement('p');
+    expText.textContent = commentObj.explanation;
+    expText.style.marginBottom = '15px';
+
+    // Function
+    const funcTitle = document.createElement('h4');
+    funcTitle.textContent = 'Fungsi:';
+    funcTitle.style.color = '#34495e';
+    funcTitle.style.marginBottom = '5px';
+    const funcText = document.createElement('p');
+    funcText.textContent = commentObj.function;
+    funcText.style.marginBottom = '15px';
+
+    // Example
+    const exTitle = document.createElement('h4');
+    exTitle.textContent = 'Contoh Implementasi:';
+    exTitle.style.color = '#34495e';
+    exTitle.style.marginBottom = '5px';
+    const exText = document.createElement('pre');
+    exText.textContent = commentObj.example;
+    exText.style.background = '#f8f9fa';
+    exText.style.padding = '10px';
+    exText.style.borderRadius = '4px';
+    exText.style.fontFamily = 'monospace';
+    exText.style.fontSize = '14px';
+    exText.style.overflow = 'auto';
+
+    // Append all
+    content.appendChild(closeBtn);
+    content.appendChild(title);
+    content.appendChild(expTitle);
+    content.appendChild(expText);
+    content.appendChild(funcTitle);
+    content.appendChild(funcText);
+    content.appendChild(exTitle);
+    content.appendChild(exText);
+    modal.appendChild(content);
+
+    // Close on overlay click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+            document.body.style.filter = '';
+            document.body.style.pointerEvents = '';
+        }
+    });
+
+    document.body.appendChild(modal);
+}
+
 // Old function - replaced by showSimpleTooltip
 
 function getAlgorithmExplanations(isIterative) {
