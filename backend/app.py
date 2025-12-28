@@ -527,32 +527,32 @@ def get_continent(feature):
     return 'Other'
 
 
-def background_cache_updater():
-    """Intelligent background cache updater with performance monitoring"""
+def background_cache_updater(target_size, update_interval=300):
+    """Intelligent background cache updater with performance monitoring for specific size"""
     while True:
         try:
-            cache_key = get_cache_key('all', 20000)
+            cache_key = get_cache_key('all', target_size)
             cache_file = os.path.join(CACHE_DIR, f"{cache_key}.json.gz")
 
-            # Check if cache needs updating (only if older than 30 minutes or doesn't exist)
+            # Check if cache needs updating (only if older than update_interval/2 or doesn't exist)
             needs_update = True
             if os.path.exists(cache_file):
                 try:
                     with gzip.open(cache_file, 'rt') as f:
                         cached_data = json.load(f)
                         cache_age = time.time() - cached_data.get('timestamp', 0)
-                        # Only update if cache is older than 30 minutes (half of CACHE_DURATION)
-                        needs_update = cache_age > (CACHE_DURATION / 2)
+                        # Only update if cache is older than half the update interval
+                        needs_update = cache_age > (update_interval / 2)
                         if not needs_update:
-                            print(f"Background cache still fresh ({cache_age/60:.1f} minutes old), skipping update")
+                            print(f"Background cache for {target_size} still fresh ({cache_age/60:.1f} minutes old), skipping update")
                 except:
-                    print("Background cache file corrupted, will update")
+                    print(f"Background cache file for {target_size} corrupted, will update")
                     needs_update = True
 
             if needs_update:
-                print("Background cache update starting...")
+                print(f"Background cache update starting for {target_size} records...")
                 start_time = time.time()
-                data = fetch_earthquake_data(20000, 'all')
+                data = fetch_earthquake_data(target_size, 'all')
                 update_time = time.time() - start_time
 
                 if data:
@@ -560,22 +560,30 @@ def background_cache_updater():
                         save_to_cache(cache_key, data)
                     print(f"Background cache updated with {len(data['features'])} records in {update_time:.1f}s")
                 else:
-                    print("Background cache update failed")
+                    print(f"Background cache update failed for {target_size}")
             else:
                 # Print cache stats periodically
                 hit_rate = (cache_stats['hits'] / max(cache_stats['total_loads'], 1)) * 100
-                print(f"Cache status: {hit_rate:.1f}% hit rate, {cache_stats['compression_ratio']:.1f}% compression")
+                print(f"Cache status for {target_size}: {hit_rate:.1f}% hit rate, {cache_stats['compression_ratio']:.1f}% compression")
 
         except Exception as e:
-            print(f"Background cache update error: {e}")
+            print(f"Background cache update error for {target_size}: {e}")
 
-        # Sleep for 15 minutes (increased from 10)
-        time.sleep(900)
+        # Sleep for specified interval (default 5 minutes for faster updates)
+        time.sleep(update_interval)
 
 if __name__ == '__main__':
-    # Start background cache updater
-    updater_thread = threading.Thread(target=background_cache_updater, daemon=True)
-    updater_thread.start()
-    print("Background cache updater started")
+    # Start multiple background cache updaters for different sizes (24/7 operation)
+    popular_sizes = [5000, 10000, 20000]
+    update_intervals = [300, 300, 600]  # 5 minutes for smaller, 10 minutes for largest
+
+    updater_threads = []
+    for size, interval in zip(popular_sizes, update_intervals):
+        updater_thread = threading.Thread(target=background_cache_updater, args=(size, interval), daemon=True)
+        updater_thread.start()
+        updater_threads.append(updater_thread)
+        print(f"Background cache updater started for {size} records (interval: {interval}s)")
+
+    print(f"Total {len(updater_threads)} background cache updaters running 24/7")
 
     app.run(debug=True, host='0.0.0.0', port=5001)
