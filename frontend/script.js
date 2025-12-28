@@ -342,46 +342,104 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeAlgorithmTooltips() {
-    // Process both iterative and recursive algorithm code blocks
+    console.log('🎯 Initializing algorithm tooltips...');
+
+    // Add hover listeners to existing code blocks using event delegation
     const algorithmCodes = document.querySelectorAll('.algorithm-code pre code');
+    console.log('📝 Found algorithm code blocks:', algorithmCodes.length);
 
     algorithmCodes.forEach((codeBlock, algorithmIndex) => {
         const isIterative = algorithmIndex === 0;
         const explanations = getAlgorithmExplanations(isIterative);
+        console.log(`🔧 Setting up ${isIterative ? 'iterative' : 'recursive'} algorithm (${explanations.length} explanations)`);
 
-        // Split code into lines and create interactive elements
-        const codeText = codeBlock.textContent;
-        const lines = codeText.split('\n').filter(line => line.trim() !== '');
-
-        // Clear existing content
-        codeBlock.innerHTML = '';
-
-        // Create interactive line elements
-        lines.forEach((line, lineIndex) => {
-            const lineDiv = document.createElement('div');
-            lineDiv.className = 'code-line';
-            lineDiv.setAttribute('data-line', lineIndex + 1);
-            lineDiv.setAttribute('data-explanation', explanations[lineIndex] || 'Baris kode algoritma');
-
-            // Add line number
-            const lineNumber = document.createElement('span');
-            lineNumber.className = 'line-number';
-            lineNumber.textContent = (lineIndex + 1).toString().padStart(2, ' ') + ' ';
-            lineDiv.appendChild(lineNumber);
-
-            // Add code content
-            const codeContent = document.createElement('span');
-            codeContent.className = 'code-content';
-            codeContent.textContent = line;
-            lineDiv.appendChild(codeContent);
-
-            // Add hover event listeners
-            lineDiv.addEventListener('mouseenter', showCodeTooltip);
-            lineDiv.addEventListener('mouseleave', hideCodeTooltip);
-
-            codeBlock.appendChild(lineDiv);
+        // Add mouse move listener to detect which line is being hovered
+        codeBlock.addEventListener('mousemove', (event) => {
+            handleCodeHover(event, codeBlock, explanations, isIterative);
         });
+
+        codeBlock.addEventListener('mouseleave', () => {
+            hideCodeTooltip();
+        });
+
+        // Add a visual indicator that the code is interactive
+        codeBlock.style.cursor = 'pointer';
+        codeBlock.title = 'Hover over code lines to see explanations';
+        codeBlock.style.border = '2px solid rgba(49, 130, 206, 0.3)';
+        codeBlock.style.borderRadius = '6px';
+        codeBlock.style.transition = 'border-color 0.3s ease';
     });
+
+    console.log('✅ Algorithm tooltips initialized successfully');
+}
+
+function handleCodeHover(event, codeBlock, explanations, isIterative) {
+    const rect = codeBlock.getBoundingClientRect();
+    const lineHeight = parseInt(getComputedStyle(codeBlock).lineHeight) || 20;
+    const y = event.clientY - rect.top;
+    const lineIndex = Math.floor(y / lineHeight);
+
+    // Get the actual lines from the code block
+    const codeText = codeBlock.textContent;
+    const lines = codeText.split('\n').filter(line => line.trim() !== '');
+
+    if (lineIndex >= 0 && lineIndex < lines.length) {
+        const explanation = explanations[lineIndex] || `Baris ${lineIndex + 1} algoritma ${isIterative ? 'iteratif' : 'rekursif'}`;
+
+        // Create tooltip data
+        const tooltipData = {
+            lineNumber: lineIndex + 1,
+            explanation: explanation,
+            algorithm: isIterative ? 'Iteratif' : 'Rekursif'
+        };
+
+        showCodeTooltipForLine(event, tooltipData);
+    } else {
+        hideCodeTooltip();
+    }
+}
+
+function showCodeTooltipForLine(event, tooltipData) {
+    // Remove existing tooltip
+    hideCodeTooltip();
+
+    // Create tooltip element
+    const tooltip = document.createElement('div');
+    tooltip.className = 'code-tooltip';
+    tooltip.innerHTML = `
+        <div class="tooltip-header">📍 Baris ${tooltipData.lineNumber} - ${tooltipData.algorithm}</div>
+        <div class="tooltip-content">${tooltipData.explanation}</div>
+    `;
+
+    // Position tooltip near mouse cursor with smart positioning
+    let left = event.pageX + 15;
+    let top = event.pageY - 10;
+
+    // Adjust if tooltip would go off-screen
+    const tooltipWidth = 400; // approximate width
+    const tooltipHeight = 100; // approximate height
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+
+    if (left + tooltipWidth > windowWidth) {
+        left = event.pageX - tooltipWidth - 15;
+    }
+
+    if (top + tooltipHeight > windowHeight) {
+        top = event.pageY - tooltipHeight - 15;
+    }
+
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+
+    // Add to DOM
+    document.body.appendChild(tooltip);
+
+    // Trigger reflow for animation
+    tooltip.offsetHeight;
+    tooltip.classList.add('visible');
+
+    console.log(`💬 Showing tooltip for line ${tooltipData.lineNumber}`);
 }
 
 function getAlgorithmExplanations(isIterative) {
@@ -440,36 +498,10 @@ function getAlgorithmExplanations(isIterative) {
     }
 }
 
+// Legacy function - kept for compatibility but not used in new implementation
 function showCodeTooltip(event) {
-    const lineElement = event.currentTarget;
-    const explanation = lineElement.getAttribute('data-explanation');
-    const lineNumber = lineElement.getAttribute('data-line');
-
-    // Remove existing tooltip
-    hideCodeTooltip();
-
-    // Create tooltip element
-    const tooltip = document.createElement('div');
-    tooltip.className = 'code-tooltip';
-    tooltip.innerHTML = `
-        <div class="tooltip-header">Baris ${lineNumber}</div>
-        <div class="tooltip-content">${explanation}</div>
-    `;
-
-    // Position tooltip
-    const rect = lineElement.getBoundingClientRect();
-    tooltip.style.left = (rect.left + window.scrollX) + 'px';
-    tooltip.style.top = (rect.top + window.scrollY - 10) + 'px';
-
-    // Add to DOM
-    document.body.appendChild(tooltip);
-
-    // Highlight current line
-    lineElement.classList.add('code-line-highlighted');
-
-    // Trigger reflow for animation
-    tooltip.offsetHeight;
-    tooltip.classList.add('visible');
+    // This function is no longer used - replaced by showCodeTooltipForLine
+    console.log('Legacy showCodeTooltip called - this should not happen');
 }
 
 function hideCodeTooltip() {
