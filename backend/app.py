@@ -121,6 +121,56 @@ def cleanup_old_cache():
     except Exception as e:
         print(f"Cache cleanup error: {e}")
 
+def combine_historical_live(size):
+    """Combine historical cached data with live feed for efficient large dataset handling"""
+    try:
+        live_response = requests.get("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson", timeout=30)
+        live_response.raise_for_status()
+        live_data = live_response.json()
+        live_data['features'] = [f for f in live_data['features'] if f['properties']['mag'] and f['properties']['mag'] >= 2.5]
+        live_count = len(live_data['features'])
+        print(f"Fetched {live_count} live records (M >= 2.5)")
+
+        # Get historical data (use existing 20000 cache)
+        large_cache_key = get_cache_key(20000)
+        historical_data = load_from_cache(large_cache_key)
+        if not historical_data:
+            print("No historical data cache, fetching historical...")
+            historical_data = fetch_earthquake_data(20000)
+
+        # Combine live + historical, filter duplicates, limit to size
+        all_features = live_data['features'] + historical_data['features']
+        existing_ids = set()
+        unique_features = []
+        for f in all_features:
+            if f['id'] not in existing_ids:
+                existing_ids.add(f['id'])
+                unique_features.append(f)
+
+        # Limit to size
+        unique_features = unique_features[:size]
+        print(f"Combined {len(unique_features)} unique records")
+
+        data = {
+            'type': 'FeatureCollection',
+            'features': unique_features
+        }
+        return data
+    except Exception as e:
+        print(f"Error combining data: {e}, using historical only")
+        large_cache_key = get_cache_key(20000)
+        historical_data = load_from_cache(large_cache_key)
+        if historical_data:
+            data = {
+                'type': 'FeatureCollection',
+                'features': historical_data['features'][:size]
+            }
+            print(f"Using cached historical data ({len(data['features'])} records)")
+            return data
+        else:
+            print("No cached data, fetching...")
+            return fetch_earthquake_data(size)
+
 def fetch_earthquake_data(target_count):
     print(f"=== Fetching {target_count} REAL earthquake records (M >= 2.5) from USGS ===")
 
@@ -222,53 +272,31 @@ def get_earthquakes():
     size = int(request.args.get('size', 10))
     sort_by = request.args.get('sort', 'time')
 
-    # Use cache key based on requested size for better cache utilization
+    # Use cache for all sizes
     cache_key = get_cache_key(size)
     data = load_from_cache(cache_key)
-
     if data and len(data['features']) >= size:
         print(f"Loaded {len(data['features'])} records from cache for size {size}")
         data['features'] = data['features'][:size]
     else:
         print(f"Cache miss or insufficient for size {size}, fetching fresh data...")
 
-        # For small sizes, try live feed first for recency
-        if size <= 100:
-            try:
-                response = requests.get("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson", timeout=10)
-                response.raise_for_status()
-                data = response.json()
-
-                # Filter to magnitude >= 2.5 as per requirements
-                data['features'] = [f for f in data['features'] if f['properties']['mag'] and f['properties']['mag'] >= 2.5]
-
-                real_time_count = len(data['features'])
-                print(f"Fetched {real_time_count} real-time earthquakes (M >= 2.5)")
-
-                # If live feed has enough data, use it
-                if real_time_count >= size:
-                    data['features'] = data['features'][:size]
-                    print(f"Using {size} real-time records")
-                else:
-                    # Fall back to comprehensive fetch
-                    print(f"Live feed only has {real_time_count} records, need {size}. Using comprehensive fetch...")
-                    data = fetch_earthquake_data(size)
-
-            except Exception as e:
-                print(f"Live feed error: {e}, using comprehensive fetch...")
-                data = fetch_earthquake_data(size)
+        # For sizes > 100, combine historical + live feed for comprehensive data
+        if size > 100:
+            print(f"For size > 100, combining historical + live feed for comprehensive data")
+            data = combine_historical_live(size)
         else:
-            # For larger sizes, try to slice from cached 20000 records first
+            # For smaller sizes, use cached historical data for fast loading
             large_cache_key = get_cache_key(20000)
-            large_data = load_from_cache(large_cache_key)
-            if large_data and len(large_data['features']) >= size:
+            historical_data = load_from_cache(large_cache_key)
+            if historical_data:
                 data = {
                     'type': 'FeatureCollection',
-                    'features': large_data['features'][:size]
+                    'features': historical_data['features'][:size]
                 }
-                print(f"Sliced {size} records from cached 20000 records")
+                print(f"Using cached historical data ({len(data['features'])} records)")
             else:
-                # Fall back to comprehensive fetch
+                print("No cached data, fetching...")
                 data = fetch_earthquake_data(size)
 
         # Cache the result
@@ -289,13 +317,14 @@ def get_earthquakes():
     # Sort data
     if sort_by == 'magnitude':
         features.sort(key=lambda x: x['properties']['mag'], reverse=True)
+        features = features[:size]  # Limit to requested size
+        print(f"For sort=magnitude, returning {len(features)} records from highest to lowest magnitude")
     elif sort_by == 'location':
         features.sort(key=lambda x: x['properties']['place'] or '')
+        features = features[:size]
     else:  # time
         features.sort(key=lambda x: x['properties']['time'], reverse=True)
-
-    # Limit size
-    features = features[:size]
+        features = features[:size]
 
     # Check if analysis is cached
     analysis_cache_key = f"analysis_{size}_{DATA_VERSION}"
